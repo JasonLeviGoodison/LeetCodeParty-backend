@@ -1,0 +1,147 @@
+const Room = require("./classes/Room")
+const Player = require("./classes/Player")
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const Rooms = require("./classes/Rooms");
+const Users = require("./classes/Users");
+const { createGuid } = require("./utils/utils");
+const router = express.Router();
+
+const port = process.env.PORT || 4001;
+// const index = require("./routes/index");
+router.get("/", (req, res) => {
+	res.send({ response: "I am alive" }).status(200);
+});
+
+const app = express();
+app.use(router);
+
+const server = http.createServer(app);
+
+const io = socketIo(server); // < Interesting!
+
+var numUsers = 0;
+let readyUps = 0;
+let playerId = 0;
+let players = []
+
+// In memory sessions and users
+let rooms = new Rooms();
+let users = new Users();
+
+function getNewProblem() {
+  return "This is a new problem, start!"
+}
+
+console.log("Rooms", rooms.getRooms());
+console.log("Users", users.getUsers());
+
+
+
+//Create Room
+function createRoom(host, problemId, fn) {
+	console.log("host", host)
+	const roomId = createGuid();
+	if (!users.hasUser(host.id)) {
+		fn({ errorMessage: 'Disconnected.' });
+		console.log('The socket received a message after it was disconnected.');
+		return;
+	}
+	
+	var room = new Room(roomId, host, problemId)
+	rooms.createNewRoom(room, host)
+	host.setRoomId(roomId);
+	//users[userId].sessionId = sessionId;
+	//sessions[session.id] = session;
+	
+	// fn({
+	// 	roomId: roomId,
+	// 	problemId: problemId
+	// });
+	//sendMessage('created the session', true);
+	console.log('User ' + host.id + ' created session ' + room.id + ' with problem ' + problemId);
+}
+
+
+io.on("connection", (socket) => {
+	const userId = createGuid();
+	const player = new Player(userId, socket);
+	users.addUser(player);
+	socket.emit('userId', userId);
+	console.log('User ' + userId + ' connected.');
+
+	var addedUser = false;
+	console.log("New client connected");
+
+	socket.on("add user", () => {
+		if (addedUser) return;
+
+		newPlayer = new Player(playerId, socket)
+		players.push(newPlayer);
+		addedUser = true;
+		++playerId;
+		// we store the username in the socket session for this client
+		//socket.username = username;
+		++numUsers;
+
+		socket.emit("login", newPlayer.id);
+		// echo globally (all clients) that a person has connected
+		socket.broadcast.emit('user joined', {
+			user: playerId
+		});
+
+		// when the user disconnects.. perform this
+		socket.on('disconnect', () => {
+			if (addedUser) {
+				--numUsers;
+				// echo globally that this client has left
+				socket.broadcast.emit('user left', {
+					//username: socket.username,
+					numUsers: numUsers
+				});
+			}
+		});
+	});
+
+	socket.on('createRoom', function(data, fn) {
+		let player = users.getUser(data.playerId)
+		createRoom(player, data.problemId, fn);
+		console.log(rooms.getRooms());
+		console.log(users.getUsers());
+	})
+	socket.on("readyUp", (id) => {
+		console.log("ready up", id)
+		readyUps += 1;
+		if(readyUps == 2) {
+			players[0].socket.emit("gameready", getNewProblem())
+			players[1].socket.emit("gameready", getNewProblem())
+		}
+	});
+
+
+	socket.on("createNewRoom", (name) => {
+		console.log("Creating a new room", name)
+		
+	})
+
+
+  
+
+  // socket.on("entergame", (roomId, playerId) => {
+
+
+  //   // if (!rooms[roomId]) {
+  //   //   rooms[roomId] = new Room(roomId, player)
+  //   // }
+  //   // else {
+  //   //   rooms[roomId].addSecondPlayer(player);
+  //   // }
+  // })
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
+
+server.listen(port, () => console.log(`Listening on port ${port}`));
