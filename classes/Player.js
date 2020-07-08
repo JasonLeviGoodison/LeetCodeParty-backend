@@ -1,7 +1,7 @@
 var Promise = require('bluebird');
 
 class Player{
-    constructor(knex, id, socket) {
+    constructor(id, socket) {
         this.id = id;
         this.state = 'waiting';
         this.code = '';
