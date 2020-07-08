@@ -1,4 +1,4 @@
-start:
+run:
 	node app.js
 
 test:
