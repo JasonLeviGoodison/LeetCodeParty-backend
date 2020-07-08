@@ -7,21 +7,6 @@ class Player{
         this.code = '';
         this.socket = socket;
         this.roomId = '';
-
-        return new Promise(function(resolve, reject) {
-            return knex.schema.hasTable('player')
-            .then(function(exists) {
-                return knex.schema.createTable('player', function(t) {
-                    t.increments('id').primary();
-                });
-            })
-            .then(function() {
-                return resolve();
-            })
-            .catch(function(err) {
-                return reject(err);
-            });
-        });
     }
 
     // On submit
