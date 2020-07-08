@@ -7,6 +7,7 @@ const Rooms = require("./classes/Rooms");
 const Users = require("./classes/Users");
 const { createGuid } = require("./utils/utils");
 const router = express.Router();
+const config = require('./config/base');
 
 const port = process.env.PORT || 4001;
 // const index = require("./routes/index");
@@ -19,6 +20,33 @@ app.use(router);
 
 const server = http.createServer(app);
 
+// Create the db connection info
+var dbConnection = {
+	host: config.PG_CONNECTION_HOST,
+	database: config.PG_CONNECTION_DB_NAME
+};
+
+// Create the database connection
+var dbConfig = {
+	client: 'pg',
+	connection: dbConnection,
+	searchPath: ['knex', 'public']
+};
+
+var knex = require('knex')(dbConfig);
+
+var rooms, player, users;
+knex.raw('select 1+1 as result')
+.then(function() {
+	console.log("Did connect succesfully to db.\n");
+	return new Player(knex, null, null)
+}).then(function(p) {
+	player = p;
+}).catch(function(err) {
+	console.log("Error during process: " + err);
+	process.exit();
+});
+
 const io = socketIo(server); // < Interesting!
 
 var numUsers = 0;
@@ -27,8 +55,8 @@ let playerId = 0;
 let players = []
 
 // In memory sessions and users
-let rooms = new Rooms();
-let users = new Users();
+rooms = new Rooms();
+users = new Users();
 
 function getNewProblem() {
   return "This is a new problem, start!"
@@ -36,8 +64,6 @@ function getNewProblem() {
 
 console.log("Rooms", rooms.getRooms());
 console.log("Users", users.getUsers());
-
-
 
 //Create Room
 function createRoom(host, problemId, fn) {
