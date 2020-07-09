@@ -1,5 +1,5 @@
 run:
-	node app.js
+	nodemon app.js
 
 test:
 	npm test

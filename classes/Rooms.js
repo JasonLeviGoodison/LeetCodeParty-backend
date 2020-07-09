@@ -9,6 +9,10 @@ class Rooms {
         return this.rooms;
     }
 
+    getRoom(roomId) {
+        return this.rooms[roomId];
+    }
+
     hasRoom(roomId) {
        return this.rooms.hasOwnProperty(roomId);
     }

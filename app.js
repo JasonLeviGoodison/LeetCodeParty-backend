@@ -64,27 +64,27 @@ console.log("Rooms", rooms.getRooms());
 console.log("Users", users.getUsers());
 
 //Create Room
-function createRoom(host, problemId, fn) {
+function createRoom(host, problemId, callback) {
 	console.log("host", host)
 	const roomId = createGuid();
 	if (!users.hasUser(host.id)) {
-		fn({ errorMessage: 'Disconnected.' });
+		callback({ errorMessage: 'Disconnected.' });
 		console.log('The socket received a message after it was disconnected.');
 		return;
 	}
 	
-	var room = new Room(roomId, host, problemId)
-	rooms.createNewRoom(room, host)
+	var room = new Room(roomId, host, problemId);
+	rooms.createNewRoom(room, host);
 	host.setRoomId(roomId);
 	//users[userId].sessionId = sessionId;
 	//sessions[session.id] = session;
 	
-	// fn({
-	// 	roomId: roomId,
-	// 	problemId: problemId
-	// });
+	callback({
+		roomId,
+		problemId
+	});
 	//sendMessage('created the session', true);
-	console.log('User ' + host.id + ' created session ' + room.id + ' with problem ' + problemId);
+	console.log('User ' + host.id + ' created room ' + room.id + ' with problem ' + problemId);
 }
 
 
@@ -114,7 +114,21 @@ io.on("connection", (socket) => {
 			player.setSocket(socket);
 			console.log('User is back! ' + userId);
 		}
-	})
+	});
+
+	socket.on("joinRoom", ({roomId, userId}, callback) => {
+		let player = users.getUser(userId);
+		let room = rooms.getRoom(roomId);
+
+		if (room == null) {
+			console.log("Room does not exist");
+			callback({errorMessage: "Room does not exist"});
+			return;
+		}
+
+		room.addPlayer(player);
+		callback({roomId, problemId: room.getProblemId()});
+	});
 
 	var addedUser = false;
 	console.log("New client connected");
@@ -149,12 +163,12 @@ io.on("connection", (socket) => {
 		});
 	});
 
-	socket.on('createRoom', function(data, fn) {
+	socket.on('createRoom', function(data, callback) {
 		let player = users.getUser(data.playerId)
-		createRoom(player, data.problemId, fn);
+		createRoom(player, data.problemId, callback);
 		console.log(rooms.getRooms());
 		console.log(users.getUsers());
-	})
+	});
 	socket.on("readyUp", (id) => {
 		console.log("ready up", id)
 		readyUps += 1;
