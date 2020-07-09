@@ -1,5 +1,8 @@
 # Leetcode Party
 
+## E2E Diagram
+[Lucid Chart](https://app.lucidchart.com/documents/edit/47d5da20-8b85-43c2-bd5b-e01e243f7af1/0_0?beaconFlowId=4B78530DB65484E3#?folder_id=home&browser=icon)
+
 ## Running Server
 
     make run
