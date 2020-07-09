@@ -6,15 +6,13 @@ const socketIo = require("socket.io");
 const Rooms = require("./classes/Rooms");
 const Users = require("./classes/Users");
 const { createGuid } = require("./utils/utils");
-const router = express.Router();
 const config = require('./config/base');
 const models = require('./models/database');
 
+
 const port = process.env.PORT || 4001;
-// const index = require("./routes/index");
-router.get("/", (req, res) => {
-	res.send({ response: "I am alive" }).status(200);
-});
+const index = require("./routes/index");
+
 
 // Create the db connection info
 var dbConnection = {
@@ -42,7 +40,7 @@ knex.raw('select 1+1 as result')
 });
 
 const app = express();
-app.use(router);
+app.use(index);
 
 const server = http.createServer(app);
 
@@ -90,12 +88,33 @@ function createRoom(host, problemId, fn) {
 }
 
 
-io.on("connection", (socket) => {
-	const userId = createGuid();
+function newUser(socket, userId = '') {
+	if (userId == '') {
+		userId = createGuid();
+	}
 	const player = new Player(userId, socket);
 	users.addUser(player);
-	socket.emit('userId', userId);
-	console.log('User ' + userId + ' connected.');
+	socket.emit("userId", userId);
+	console.log('New User! ' + userId);
+}
+
+io.on("connection", (socket) => {
+
+	socket.on("getNewUserId", () => {
+		newUser(socket)
+	});
+
+	socket.on("newSocket", ({userId}) => {
+		let player = users.getUser(userId);
+
+		// Incase server goes down & we lose our memory of user
+		if (player === null || player === undefined) {
+			newUser(socket, userId)
+		} else {
+			player.setSocket(socket);
+			console.log('User is back! ' + userId);
+		}
+	})
 
 	var addedUser = false;
 	console.log("New client connected");
@@ -171,3 +190,8 @@ io.on("connection", (socket) => {
 });
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
+
+module.exports = {
+	rooms,
+	users
+}

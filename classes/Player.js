@@ -25,6 +25,14 @@ class Player{
     setRoomId(id) {
         this.roomId = id;
     }
+
+    setSocket(socket) {
+        this.socket = socket;
+    }
+    
+    getSocket() {
+        return this.socket;
+    }
 }
 
 module.exports = Player
