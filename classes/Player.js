@@ -1,3 +1,5 @@
+var Promise = require('bluebird');
+
 class Player{
     constructor(id, socket) {
         this.id = id;
