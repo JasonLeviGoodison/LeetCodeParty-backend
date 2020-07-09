@@ -2,19 +2,19 @@ var Promise = require('bluebird');
 
 var tables = [
 	createTableDefinition("users", function(t) {
-		t.increments('id').primary();
+		t.string('uuid').primary();
 		t.timestamps();
 	}),
 	createTableDefinition("rooms", function(t) {
-		t.increments('id').primary();
+		t.string('uuid').primary();
 		t.string("problem_id").notNullable();
-		t.integer("host_user_id").notNullable().references('id').inTable('users');
+		t.string("host_user_uuid").notNullable().references('uuid').inTable('users');
 		t.timestamps();
 	}),
 	createTableDefinition("room_members", function(t) {
-		t.increments('id').primary();
-		t.integer('room_id').references('id').inTable('rooms').notNullable();
-		t.integer('participant_user_id').references('id').inTable('users').notNullable();
+		t.string('uuid').primary();
+		t.string('room_uuid').references('uuid').inTable('rooms').notNullable();
+		t.string('participant_user_uuid').references('uuid').inTable('users').notNullable();
 		t.timestamps();
 	})
 ];
