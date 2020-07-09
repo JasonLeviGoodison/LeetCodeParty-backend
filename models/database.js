@@ -8,13 +8,13 @@ var tables = [
 	createTableDefinition("rooms", function(t) {
 		t.increments('id').primary();
 		t.string("problem_id").notNullable();
-		t.string("host_user_id").notNullable();
+		t.integer("host_user_id").notNullable().references('id').inTable('users');
 		t.timestamps();
 	}),
 	createTableDefinition("room_members", function(t) {
 		t.increments('id').primary();
-		t.string('room_id').notNullable();
-		t.string('participant_user_id').notNullable();
+		t.integer('room_id').references('id').inTable('rooms').notNullable();
+		t.integer('participant_user_id').references('id').inTable('users').notNullable();
 		t.timestamps();
 	})
 ];
@@ -25,11 +25,16 @@ module.exports.initialize = function(knex) {
 			knex.schema.hasTable(itm.name)
 			.then(function(exists) {
 				if (!exists) {
-					return knex.schema.createTable(itm.name, itm.init);
+					return knex.schema.createTable(itm.name, itm.init)
+					.then(function() {
+						return;
+					})
+					.catch(function(err) {
+						console.log("Failed to create table: ", err);
+						process.exit();
+						return reject(err);
+					});
 				}
-			})
-			.catch(function(err) {
-				return err;
 			});
 		})
 		.then(function() {

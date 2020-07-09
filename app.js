@@ -37,7 +37,7 @@ knex.raw('select 1+1 as result')
 }).then(function() {
 	console.log("Connected + Setup PSQL Database Successfully.")
 }).catch(function(err) {
-	console.log("Error during process: " + err);
+	console.log("Error during process: ", err);
 	process.exit();
 });
 
