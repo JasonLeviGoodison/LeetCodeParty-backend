@@ -65,7 +65,6 @@ console.log("Users", users.getUsers());
 
 //Create Room
 function createRoom(host, problemId, callback) {
-	console.log("host", host)
 	const roomId = createGuid();
 	if (!users.hasUser(host.id)) {
 		callback({ errorMessage: 'Disconnected.' });
@@ -73,8 +72,7 @@ function createRoom(host, problemId, callback) {
 		return;
 	}
 	
-	var room = new Room(roomId, host, problemId);
-	rooms.createNewRoom(room, host);
+	rooms.createNewRoom(roomId, host, problemId);
 	host.setRoomId(roomId);
 	//users[userId].sessionId = sessionId;
 	//sessions[session.id] = session;
@@ -164,10 +162,13 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on('createRoom', function(data, callback) {
-		let player = users.getUser(data.playerId)
-		createRoom(player, data.problemId, callback);
-		console.log(rooms.getRooms());
-		console.log(users.getUsers());
+		try {
+			let player = users.getUser(data.userId);
+			createRoom(player, data.problemId, callback);
+		}
+		catch {
+			callback("Failed with error")
+		}
 	});
 	socket.on("readyUp", (id) => {
 		console.log("ready up", id)
@@ -204,8 +205,3 @@ io.on("connection", (socket) => {
 });
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
-
-module.exports = {
-	rooms,
-	users
-}

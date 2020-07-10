@@ -17,9 +17,9 @@ class Rooms {
        return this.rooms.hasOwnProperty(roomId);
     }
 
-    createNewRoom(room, player) {
-        let newRoom = new Room(room, player);
-        this.rooms[room] = newRoom;
+    createNewRoom(roomId, host, problemId) {
+        let newRoom = new Room(roomId, host, problemId);
+        this.rooms[roomId] = newRoom;
         return newRoom;
     }
 }
