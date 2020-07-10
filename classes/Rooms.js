@@ -18,9 +18,14 @@ class Rooms {
     }
 
     createNewRoom(roomId, host, problemId) {
-        let newRoom = new Room(roomId, host, problemId);
-        this.rooms[roomId] = newRoom;
-        return newRoom;
+        var newRoom = new Room(roomId, host, problemId)
+        .then(function() {
+            this.rooms[roomId] = newRoom;
+            return newRoom;
+        })
+        .catch(function(err) {
+            return err;
+        });
     }
 }
 
