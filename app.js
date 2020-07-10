@@ -33,7 +33,8 @@ knex.raw('select 1+1 as result')
 .then(function() {
 	return models.initialize(knex);
 }).then(function() {
-	console.log("Connected + Setup PSQL Database Successfully.")
+	console.log("Connected + Setup PSQL Database Successfully.");
+	global.knex = knex;
 }).catch(function(err) {
 	console.log("Error during process: ", err);
 	process.exit();
@@ -73,18 +74,23 @@ function createRoom(host, problemId, fn) {
 		return;
 	}
 	
-	var room = new Room(roomId, host, problemId)
-	rooms.createNewRoom(room, host)
-	host.setRoomId(roomId);
-	//users[userId].sessionId = sessionId;
-	//sessions[session.id] = session;
-	
-	// fn({
-	// 	roomId: roomId,
-	// 	problemId: problemId
-	// });
-	//sendMessage('created the session', true);
-	console.log('User ' + host.id + ' created session ' + room.id + ' with problem ' + problemId);
+	new Room(roomId, host, problemId)
+	.then(function() {
+		host.setRoomId(roomId);
+
+		//users[userId].sessionId = sessionId;
+		//sessions[session.id] = session;
+		
+		// fn({
+		// 	roomId: roomId,
+		// 	problemId: problemId
+		// });
+		//sendMessage('created the session', true);
+		console.log('User ' + host.id + ' created session ' + room.id + ' with problem ' + problemId);
+	})
+	.catch(function(err) {
+		console.log("Failed to setup room: ", err);
+	});
 }
 
 
@@ -93,9 +99,15 @@ function newUser(socket, userId = '') {
 		userId = createGuid();
 	}
 	const player = new Player(userId, socket);
-	users.addUser(player);
-	socket.emit("userId", userId);
-	console.log('New User! ' + userId);
+	
+	users.addUser(player)
+	.then(function() {
+		socket.emit("userId", userId);
+		console.log('New User! ' + userId);
+	})
+	.catch(function(err) {
+		console.log("Failed to add user: ", err);
+	});
 }
 
 io.on("connection", (socket) => {
