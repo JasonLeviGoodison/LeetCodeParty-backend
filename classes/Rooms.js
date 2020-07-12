@@ -18,13 +18,14 @@ class Rooms {
     }
 
     createNewRoom(roomId, host, problemId) {
-        var newRoom = new Room(roomId, host, problemId)
-        .then(function() {
-            this.rooms[roomId] = newRoom;
-            return newRoom;
-        })
-        .catch(function(err) {
-            return err;
+        return new Promise(function(resolve, reject) {
+            return new Room(roomId, host, problemId)
+            .then(function(results) {
+                return resolve();
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
         });
     }
 }

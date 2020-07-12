@@ -15,5 +15,6 @@
     "knex": "^0.21.1",
     "pg": "^8.2.2",
     "socket.io": "^2.3.0"
-  }
+  },
+  "devDependencies": {}
 }
