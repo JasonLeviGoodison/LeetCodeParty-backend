@@ -66,7 +66,7 @@ console.log("Rooms", rooms.getRooms());
 console.log("Users", users.getUsers());
 
 //Create Room
-function createRoom(host, problemId, callback) {
+function createRoom(host, problemId, socket, callback) {
 	const roomId = createGuid();
 
 	return player.hasRoomAlready(host)
@@ -85,6 +85,7 @@ function createRoom(host, problemId, callback) {
 		return player.setRoomId(host, roomId);
 	})
 	.then(function() {
+		socket.join(roomId);
 		callback({
 			roomId,
 			problemId
@@ -166,6 +167,14 @@ io.on("connection", (socket) => {
 			return Promise.resolve();
 		})
 		.then(function() {
+
+			// Emit a message to all the sockets in the room that a new user joined
+			console.log("Emitting New Member (" + userId + ") to RoomID: " + roomId);
+			socket.to(roomId).emit('newMember', userId);
+
+			// Join this user into the room of sockets
+			socket.join(roomId);
+
 			callback({roomId, problemId: roomVal.problem_id});
 		})
 		.catch(function(msg) {
@@ -215,7 +224,7 @@ io.on("connection", (socket) => {
 			}
 
 			console.log("Found user: ", user);
-			return createRoom(user.uuid, data.problemId, callback);
+			return createRoom(user.uuid, data.problemId, socket, callback);
 		})
 		.then(function(room) {
 			console.log("Made room");
