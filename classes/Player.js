@@ -54,6 +54,26 @@ class Player{
         return this.socket;
     }
 
+    inRoomAlready(playerUUID, roomUUID) {
+        return new Promise(function(resolve, reject) {
+            return global.knex('room_members')
+            .where({
+                room_uuid: roomUUID,
+                participant_user_uuid: playerUUID,
+            })
+            .then(function(result) {
+                if (result.length == 0) {
+                    return resolve(false);
+                }
+
+                return resolve(true);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
+    }
+
     hasRoomAlready(hostUUID) {
         return new Promise(function(resolve, reject) {
             console.log("Checking for other rooms hosted by: ", hostUUID);

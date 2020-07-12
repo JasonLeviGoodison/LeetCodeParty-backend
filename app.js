@@ -139,17 +139,39 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("joinRoom", ({roomId, userId}, callback) => {
-		let player = users.getUser(userId);
-		let room = rooms.getRoom(roomId);
 
-		if (room == null) {
-			console.log("Room does not exist");
-			callback({errorMessage: "Room does not exist"});
-			return;
-		}
+		var roomVal;
+		users.getUser(userId)
+		.then(function(user) {
+			if (!user) {
+				return Promise.reject("User does not exist");
+			}
 
-		room.addPlayer(player);
-		callback({roomId, problemId: room.getProblemId()});
+			return rooms.getRoom(roomId);
+		})
+		.then(function(room) {
+			if (!room) {
+				return Promise.reject("Room does not exist");
+			}
+
+			roomVal = room;
+			return player.inRoomAlready(userId, room.uuid);
+		})
+		.then(function(inRoomAlready) {
+			if (!inRoomAlready) {
+				return player.setRoomId(userId, roomVal.uuid);
+			}
+
+			console.log("User is already a member of the room.");
+			return Promise.resolve();
+		})
+		.then(function() {
+			callback({roomId, problemId: roomVal.problem_id});
+		})
+		.catch(function(msg) {
+			console.log("Failed: ", msg);
+			callback({errorMessage: msg});
+		});
 	});
 
 	var addedUser = false;

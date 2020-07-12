@@ -10,7 +10,25 @@ class Rooms {
     }
 
     getRoom(roomId) {
-        return this.rooms[roomId];
+        return new Promise(function(resolve, reject) {
+           return global.knex('rooms')
+               .where({
+                   uuid: roomId
+               })
+               .select("*")
+               .limit(1)
+               .then(function(result) {
+                   if (result.length < 1) {
+                       return resolve(null);
+                   }
+
+                   console.log("Found Room: ", result[0]);
+                   return resolve(result[0]);
+               })
+               .catch(function(err) {
+                    return reject(err);
+               });
+        });
     }
 
     hasRoom(roomId) {
