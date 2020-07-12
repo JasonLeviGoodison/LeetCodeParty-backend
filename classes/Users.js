@@ -14,7 +14,24 @@ class Users {
     }
     
     getUser(userId) {
-        return this.users[userId];
+        return new Promise(function(resolve, reject) {
+            return global.knex('users')
+            .where({
+                uuid: userId,
+            })
+            .select('*')
+            .limit(1)
+            .then(function(results) {
+                if (results.length < 1) {
+                    return resolve(null);
+                }
+
+                return resolve(results[0]);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
     }
 
     addUser(player) {

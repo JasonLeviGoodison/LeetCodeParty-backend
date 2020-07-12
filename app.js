@@ -8,6 +8,7 @@ const Users = require("./classes/Users");
 const { createGuid } = require("./utils/utils");
 const config = require('./config/base');
 const models = require('./models/database');
+const Promise = require('bluebird')
 
 
 const port = process.env.PORT || 4001;
@@ -65,31 +66,34 @@ console.log("Rooms", rooms.getRooms());
 console.log("Users", users.getUsers());
 
 //Create Room
-function createRoom(host, problemId, fn) {
-	console.log("host", host)
+function createRoom(host, problemId, callback) {
 	const roomId = createGuid();
-	if (!users.hasUser(host.id)) {
-		fn({ errorMessage: 'Disconnected.' });
-		console.log('The socket received a message after it was disconnected.');
-		return;
-	}
-	
-	new Room(roomId, host, problemId)
-	.then(function() {
-		host.setRoomId(roomId);
 
-		//users[userId].sessionId = sessionId;
-		//sessions[session.id] = session;
-		
-		// fn({
-		// 	roomId: roomId,
-		// 	problemId: problemId
-		// });
+	return player.hasRoomAlready(host)
+	.then(function(rooms) {
+		if (rooms.length > 0) {
+			console.log("Host had previous rooms, cleaning them up: ", rooms);
+			return player.deleteAllHostedRooms(rooms);
+		}
+
+		return Promise.resolve();
+	})
+	.then(function() {
+		return rooms.createNewRoom(roomId, host, problemId)
+	})
+	.then(function() {
+		return player.setRoomId(host, roomId);
+	})
+	.then(function() {
+		callback({
+			roomId,
+			problemId
+		});
 		//sendMessage('created the session', true);
-		console.log('User ' + host.id + ' created session ' + room.id + ' with problem ' + problemId);
+		console.log('User ' + host + ' created room ' + roomId + ' with problem ' + problemId);
 	})
 	.catch(function(err) {
-		console.log("Failed to setup room: ", err);
+		console.log("Failed to create room: ", err);
 	});
 }
 
@@ -100,7 +104,7 @@ function newUser(socket, userId = '') {
 	}
 	const player = new Player(userId, socket);
 	
-	users.addUser(player)
+	return users.addUser(player)
 	.then(function() {
 		socket.emit("userId", userId);
 		console.log('New User! ' + userId);
@@ -117,16 +121,58 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("newSocket", ({userId}) => {
-		let player = users.getUser(userId);
+		users.getUser(userId)
+		.then(function(user) {
+			if (!user) {
+				return newUser(socket, userId)
+			}
 
-		// Incase server goes down & we lose our memory of user
-		if (player === null || player === undefined) {
-			newUser(socket, userId)
-		} else {
-			player.setSocket(socket);
-			console.log('User is back! ' + userId);
-		}
-	})
+			console.log("Returning User: ", userId);
+			return Promise.resolve();
+		})
+		.then(function() {
+			return;
+		})
+		.catch(function(err) {
+			console.log("Failed with err: ", err);
+		});
+	});
+
+	socket.on("joinRoom", ({roomId, userId}, callback) => {
+
+		var roomVal;
+		users.getUser(userId)
+		.then(function(user) {
+			if (!user) {
+				return Promise.reject("User does not exist");
+			}
+
+			return rooms.getRoom(roomId);
+		})
+		.then(function(room) {
+			if (!room) {
+				return Promise.reject("Room does not exist");
+			}
+
+			roomVal = room;
+			return player.inRoomAlready(userId, room.uuid);
+		})
+		.then(function(inRoomAlready) {
+			if (!inRoomAlready) {
+				return player.setRoomId(userId, roomVal.uuid);
+			}
+
+			console.log("User is already a member of the room.");
+			return Promise.resolve();
+		})
+		.then(function() {
+			callback({roomId, problemId: roomVal.problem_id});
+		})
+		.catch(function(msg) {
+			console.log("Failed: ", msg);
+			callback({errorMessage: msg});
+		});
+	});
 
 	var addedUser = false;
 	console.log("New client connected");
@@ -161,12 +207,23 @@ io.on("connection", (socket) => {
 		});
 	});
 
-	socket.on('createRoom', function(data, fn) {
-		let player = users.getUser(data.playerId)
-		createRoom(player, data.problemId, fn);
-		console.log(rooms.getRooms());
-		console.log(users.getUsers());
-	})
+	socket.on('createRoom', function(data, callback) {
+		users.getUser(data.userId)
+		.then(function(user) {
+			if (!user) {
+				callback("User does not exist!")
+			}
+
+			console.log("Found user: ", user);
+			return createRoom(user.uuid, data.problemId, callback);
+		})
+		.then(function(room) {
+			console.log("Made room");
+		})
+		.catch(function(err) {
+			callback("Failed with error: ", err);
+		});
+	});
 	socket.on("readyUp", (id) => {
 		console.log("ready up", id)
 		readyUps += 1;
@@ -202,8 +259,3 @@ io.on("connection", (socket) => {
 });
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
-
-module.exports = {
-	rooms,
-	users
-}

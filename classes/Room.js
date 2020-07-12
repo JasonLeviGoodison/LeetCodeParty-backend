@@ -22,6 +22,10 @@ class Room {
         this.players.push(player);
     }
 
+    getProblemId() {
+        return this.problemId;
+    }
+
     isReady() {
         let playersLen = this.players.length;
         if (playersLen == 1) {
