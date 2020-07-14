@@ -26,13 +26,13 @@ class Room {
         return this.problemId;
     }
     
-    getHost() {
+    static getHost(uuid) {
         return new Promise(function(resolve, reject) {
-            console.log("Getting host for: ", room.uuid);
+            console.log("Getting host for: ", uuid);
 
             return global.knex('rooms')
             .where({
-                room_uuid: this.uuid,
+                room_uuid: uuid,
             })
             .limit(1)
            .then(function(entry) {
