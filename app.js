@@ -5,7 +5,7 @@ const config = require('./config/base');
 const models = require('./models/database');
 const port = process.env.PORT || 4001;
 const index = require("./routes/index");
-const Socket = require('./controller/socket/socket');
+const SocketHandlers = require('./controller/socket/handlers');
 
 // Create the db connection info
 var dbConnection = {
@@ -39,7 +39,7 @@ knex.raw('select 1+1 as result')
 	const io = socketIo(server); // < Interesting!
 
 	// Handle the Socket Messages
-	let socketCtrl = new Socket(io, knex);
+	let socketCtrl = new SocketHandlers(io, knex);
 	socketCtrl.Start();
 
 	// Listen on Port

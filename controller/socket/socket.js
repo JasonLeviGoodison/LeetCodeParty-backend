@@ -5,7 +5,7 @@ const RoomMember = require('../../classes/RoomMember');
 const Room = require('../../classes/Room');
 const { createGuid } = require("../../utils/utils");
 
-class Socket {
+class SocketController {
     constructor(io, knex) {
         this.room = new Room(knex);
         this.roomMember = new RoomMember(knex);
@@ -92,144 +92,22 @@ class Socket {
         });
     }
 
-    _getNewUserId(socket) {
-        this.newUser(socket);
-    }
-
-    _newSocket(socket, userId) {
-        let self = this;
-        self.users.getUser(userId)
-        .then(function(user) {
-            if (!user) {
-                return self.newUser(socket, userId)
-            }
-
-            console.log("Returning User: ", userId);
-            return Promise.resolve();
-        })
-        .then(function() {
-            return;
-        })
-        .catch(function(err) {
-            console.log("Failed with err: ", err);
+    joinSocketInRoom(socket, roomId) {
+        return new Promise(function(resolve, reject) {
+            console.log("New Socket joining Room: ", roomId);
+            socket.join(roomId);
+            return resolve();
         });
     }
 
-    _joinRoom(socket, roomId, userId, callback) {
+    emitMessageToRoomMembers(socket, roomId, msgType, msgValue) {
         let self = this;
-        var roomVal;
-        self.users.getUser(userId)
-            .then(function(user) {
-                if (!user) {
-                    return Promise.reject("User does not exist");
-                }
-
-                return self.rooms.getRoom(roomId);
-            })
-            .then(function(room) {
-                if (!room) {
-                    return Promise.reject("Room does not exist");
-                }
-
-                roomVal = room;
-                return self.roomMember.inRoomAlready(userId, room.uuid);
-            })
-            .then(function(inRoomAlready) {
-                if (!inRoomAlready) {
-                    return self.roomMember.setRoomId(userId, roomVal.uuid);
-                }
-
-                console.log("User is already a member of the room.");
-                return Promise.resolve();
-            })
-            .then(function() {
-
-                // Emit a message to all the sockets in the room that a new user joined
-                console.log("Emitting New Member (" + userId + ") to RoomID: " + roomId);
-                socket.to(roomId).emit('newMember', userId);
-
-                // Join this user into the room of sockets
-                socket.join(roomId);
-
-                callback({roomId, problemId: roomVal.problem_id});
-            })
-            .catch(function(msg) {
-                console.log("Failed: ", msg);
-                callback({errorMessage: msg});
-            });
-    }
-
-    _createRoom(socket, data, callback) {
-        let self = this;
-        self.users.getUser(data.userId)
-        .then(function(user) {
-            if (!user) {
-                callback("User does not exist!");
-            }
-
-            console.log("Found user: ", user);
-            return self.createRoom(user.uuid, data.problemId, socket, callback);
-        })
-        .then(function(room) {
-            console.log("Made room");
-        })
-        .catch(function(err) {
-            callback("Failed with error: ", err);
-        });
-    }
-
-    _readyUp(socket, id) {
-        console.log("ready up", id)
-    }
-
-    _leaveRoom(socket, data, callback) {
-        let self = this;
-        console.log("Client", data.userId, "wants to leave room");
-        self.users.getUser(data.userId)
-        .then(function(user) {
-            if (!user) {
-                callback("User does not exist!");
-            }
-            return self.removeUserFromRoom(user.uuid, data.roomId, callback);
-        })
-        .then( () => {
-            console.log("Successfully left room");
-            callback();
-        })
-        .error((err) => {
-            callback("Couldn't disconnect from room: ", err);
-        });
-    }
-
-    Start() {
-        var self = this;
-        this.io.on("connection", (socket) => {
-
-            socket.on("getNewUserId", () => {
-                self._getNewUserId(socket);
-            });
-
-            socket.on("newSocket", ({userId}) => {
-                self._newSocket(socket, userId);
-            });
-
-            socket.on("joinRoom", ({roomId, userId}, callback) => {
-                self._joinRoom(socket, roomId, userId, callback);
-            });
-
-            socket.on('createRoom', function(data, callback) {
-                self._createRoom(socket, data, callback);
-            });
-
-            socket.on("readyUp", (id) => {
-                self._readyUp(socket, id);
-            });
-
-            socket.on("leaveRoom", (data, callback) => {
-                self._leaveRoom(socket, data, callback);
-            });
+        return new Promise(function(resolve, reject) {
+            console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            socket.to(roomId).emit(msgType, msgValue);
+            return resolve();
         });
     }
 }
 
-module.exports = Socket;
+module.exports = SocketController;
