@@ -70,18 +70,50 @@ class SocketController {
         });
     }
 
-    removeUserFromRoom(userId, roomId, callback) {
+    // Closes the room + removes all sockets from the socket room
+    closeRoomWrapper(roomId) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.room.closeRoom(roomId)
+                .then(function(result) {
+                    return self.deleteSocketRoomAndAllSockets(roomId);
+                })
+                .then(function() {
+                    return resolve();
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    // Rooms the user from the room + removes the socket from the room
+    removeRoomMemberWrapper(socket, userId, roomId) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+           return self.room.removeRoomMember(userId)
+               .then(function(result) {
+                   socket.leave(roomId)
+                   return resolve();
+               })
+               .catch(function(err) {
+                   return reject(err);
+               });
+        });
+    }
+
+    removeUserFromRoom(socket, userId, roomId, callback) {
         let self = this;
         return new Promise(function(resolve, reject) {
             return self.rooms.getRoom(roomId)
             .then(function(foundRoom) {
                 if (foundRoom.host_user_uuid == userId) {
                     console.log("This user is the host, so we should close the room.");
-                    return self.room.closeRoom(foundRoom.uuid);
+                    return self.closeRoomWrapper(foundRoom.uuid);
                 }
 
                 console.log("Removing the user from the game (by deleting room_member rows")
-                return self.room.removePlayer(userId);
+                return self.removeRoomMemberWrapper(socket, userId, roomId);
             })
             .then(function(result) {
                return resolve();
@@ -92,7 +124,7 @@ class SocketController {
         });
     }
 
-    joinSocketInRoom(socket, roomId) {
+    joinSocketInSocketRoom(socket, roomId) {
         return new Promise(function(resolve, reject) {
             console.log("New Socket joining Room: ", roomId);
             socket.join(roomId);
@@ -100,12 +132,28 @@ class SocketController {
         });
     }
 
-    emitMessageToRoomMembers(socket, roomId, msgType, msgValue) {
+    emitMessageToSocketRoomMembers(socket, roomId, msgType, msgValue) {
         let self = this;
         return new Promise(function(resolve, reject) {
             console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
             socket.to(roomId).emit(msgType, msgValue);
             return resolve();
+        });
+    }
+
+    deleteSocketRoomAndAllSockets(roomId) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            self.io.of('/').in(roomId).clients((error, clients) => {
+                if (error) {
+                    return reject(error);
+                }
+
+                for (var i = 0; i < clients.length; i++) {
+                    self.io.sockets.sockets[clients[i]].leave(roomId);
+                }
+                return resolve();
+            });
         });
     }
 }

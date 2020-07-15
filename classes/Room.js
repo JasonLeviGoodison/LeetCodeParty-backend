@@ -73,7 +73,7 @@ class Room {
         });
     }
 
-    removePlayer(playerId) {
+    removeRoomMember(playerId) {
         //Remove the player from the room
         console.log("going to remove player from room_members db");
         let self = this;

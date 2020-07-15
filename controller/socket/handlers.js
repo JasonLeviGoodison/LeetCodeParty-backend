@@ -58,11 +58,11 @@ class SocketHandlers extends SocketController {
             })
             .then(function() {
                 // Emit a message to all the sockets in the room that a new user joined
-                return self.emitMessageToRoomMembers(socket, roomId, "newMember", userId);
+                return self.emitMessageToSocketRoomMembers(socket, roomId, "newMember", userId);
             })
             .then(function() {
                 // Join this user into the room of sockets
-                return self.joinSocketInRoom(socket, roomId);
+                return self.joinSocketInSocketRoom(socket, roomId);
             })
             .then(function() {
                 callback({roomId, problemId: roomVal.problem_id});
@@ -104,7 +104,7 @@ class SocketHandlers extends SocketController {
                 if (!user) {
                     callback("User does not exist!");
                 }
-                return self.removeUserFromRoom(user.uuid, data.roomId, callback);
+                return self.removeUserFromRoom(socket, user.uuid, data.roomId, callback);
             })
             .then( () => {
                 console.log("Successfully left room");
