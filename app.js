@@ -89,11 +89,26 @@ function createRoom(host, problemId, callback) {
 			roomId,
 			problemId
 		});
-		//sendMessage('created the session', true);
+
 		console.log('User ' + host + ' created room ' + roomId + ' with problem ' + problemId);
 	})
 	.catch(function(err) {
 		console.log("Failed to create room: ", err);
+	});
+}
+
+//TODO broadcast to the other users that the room is closed (& kick them)
+function removeUserFromRoom(userId, roomId, callback) {
+	return rooms.getRoom(roomId).then((room) => {
+		if (room.host_user_uuid == userId) {
+			console.log("should close the room");
+
+			Room.closeRoom(room.uuid);
+			return;
+		}
+		console.log("Removing the user from the game (by deleting room_member rows")
+
+		Room.removePlayer(userId);
 	});
 }
 
@@ -174,44 +189,12 @@ io.on("connection", (socket) => {
 		});
 	});
 
-	var addedUser = false;
-	console.log("New client connected");
-
-	socket.on("add user", () => {
-		if (addedUser) return;
-
-		newPlayer = new Player(playerId, socket)
-		players.push(newPlayer);
-		addedUser = true;
-		++playerId;
-		// we store the username in the socket session for this client
-		//socket.username = username;
-		++numUsers;
-
-		socket.emit("login", newPlayer.id);
-		// echo globally (all clients) that a person has connected
-		socket.broadcast.emit('user joined', {
-			user: playerId
-		});
-
-		// when the user disconnects.. perform this
-		socket.on('disconnect', () => {
-			if (addedUser) {
-				--numUsers;
-				// echo globally that this client has left
-				socket.broadcast.emit('user left', {
-					//username: socket.username,
-					numUsers: numUsers
-				});
-			}
-		});
-	});
 
 	socket.on('createRoom', function(data, callback) {
 		users.getUser(data.userId)
 		.then(function(user) {
 			if (!user) {
-				callback("User does not exist!")
+				callback("User does not exist!");
 			}
 
 			console.log("Found user: ", user);
@@ -224,6 +207,7 @@ io.on("connection", (socket) => {
 			callback("Failed with error: ", err);
 		});
 	});
+
 	socket.on("readyUp", (id) => {
 		console.log("ready up", id)
 		readyUps += 1;
@@ -233,28 +217,22 @@ io.on("connection", (socket) => {
 		}
 	});
 
-
-	socket.on("createNewRoom", (name) => {
-		console.log("Creating a new room", name)
-		
-	})
-
-
-  
-
-  // socket.on("entergame", (roomId, playerId) => {
-
-
-  //   // if (!rooms[roomId]) {
-  //   //   rooms[roomId] = new Room(roomId, player)
-  //   // }
-  //   // else {
-  //   //   rooms[roomId].addSecondPlayer(player);
-  //   // }
-  // })
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
+  socket.on("leaveRoom", (data, callback) => {
+	console.log("Client", data.userId, "wants to leave room");
+	users.getUser(data.userId)
+		.then(function(user) {
+			if (!user) {
+				callback("User does not exist!");
+			}
+			return removeUserFromRoom(user.uuid, data.roomId, callback);
+		})
+		.then( () => {
+			console.log("Successfully left room");
+			callback();
+		})
+		.error((err) => {
+			callback("Couldn't disconnect from room: ", err);
+		});
   });
 });
 

@@ -3,7 +3,7 @@ var Promise = require('bluebird');
 
 class Room {
     constructor(roomUUID, host, problemId) {
-        this.id = roomUUID;
+        this.uuid = roomUUID;
         this.host = host;
         this.players = [ host ];
         this.createdDate = new Date();
@@ -24,6 +24,24 @@ class Room {
 
     getProblemId() {
         return this.problemId;
+    }
+    
+    static getHost(uuid) {
+        return new Promise(function(resolve, reject) {
+            console.log("Getting host for: ", uuid);
+
+            return global.knex('rooms')
+            .where({
+                room_uuid: uuid,
+            })
+            .limit(1)
+           .then(function(entry) {
+               return resolve(entry.host_user_uuid);
+           })
+           .catch(function(err) {
+               return reject(err);
+           });
+        });
     }
 
     isReady() {
@@ -57,6 +75,52 @@ class Room {
                 return reject(err);
             });
         });
+    }
+
+    static closeRoom(uuid) {
+        return new Promise(function(resolve, reject) {
+            console.log("Deleting Room & Participants for: ", uuid);
+
+            return global.knex('room_members')
+            .where({
+                room_uuid: uuid,
+            })
+            .del()
+           .then(function() {
+               return global.knex('rooms')
+               .where({
+                   uuid: uuid,
+               })
+               .del()
+           })
+           .then(function() {
+               return resolve();
+           })
+           .catch(function(err) {
+               return reject(err);
+           });
+        });
+    }
+
+    static removePlayer(playerId) {
+        //Remove the player from the room
+        console.log("going to remove player from room_members db");
+        return new Promise(function(resolve, reject) {
+            console.log("Removing player from room");
+
+            return global.knex('room_members')
+            .where({
+                participant_user_uuid: playerId
+            })
+            .del()
+           .then(function() {
+               return resolve();
+           })
+           .catch(function(err) {
+               return reject(err);
+           });
+        });
+        //TODO broacast to the rest of the room that this player left
     }
 }
 
