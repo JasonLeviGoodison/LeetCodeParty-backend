@@ -1,21 +1,14 @@
 var Promise = require('bluebird');
 
 class Users {
-    constructor() {
-        this.users = {}
+    constructor(knex) {
+        this.knex = knex;
     }
 
-    getUsers() {
-        return this.users;
-    }
-
-    hasUser(userId) {
-        return this.users.hasOwnProperty(userId);
-    }
-    
     getUser(userId) {
+        let self = this;
         return new Promise(function(resolve, reject) {
-            return global.knex('users')
+            return self.knex('users')
             .where({
                 uuid: userId,
             })
@@ -34,31 +27,31 @@ class Users {
         });
     }
 
-    addUser(player) {
-        this.users[player.id] = player;
-        var self = this;
+    addUser(userUUID) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.userExists(userUUID)
+            .then(function(exists) {
+                console.log("User Exists = ", exists);
+                if (!exists) {
+                    return self.createNewUser(userUUID);
+                }
 
-        return self.userExists(player.id)
-        .then(function(exists) {
-            console.log("User Exists = ", exists);
-
-            if (!exists) {
-                return self.createNewUser(player.id);
-            }
-
-            return Promise.resolve();
-        })
-        .then(function(resp) {
-            return;
-        })
-        .catch(function(err) {
-            return err;
+                return Promise.resolve();
+            })
+            .then(function(resp) {
+                return resolve();
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
         });
     }
 
     userExists(userUUID) {
+        let self = this;
         return new Promise(function(resolve, reject) {
-            return global.knex('users')
+            return self.knex('users')
             .where({
                 uuid: userUUID
             })
@@ -73,11 +66,12 @@ class Users {
     }
 
     createNewUser(userUUID) {
+        let self = this;
         return new Promise(function(resolve, reject) {
             var createdAt = new Date();
 
             console.log("Creating New User: ", userUUID);
-            return global.knex('users').insert({
+            return self.knex('users').insert({
                 uuid: userUUID,
                 created_at: createdAt,
                 updated_at: createdAt

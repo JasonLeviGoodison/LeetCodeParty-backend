@@ -1,19 +1,11 @@
-const Room = require("./classes/Room")
-const Player = require("./classes/Player")
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
-const Rooms = require("./classes/Rooms");
-const Users = require("./classes/Users");
-const { createGuid } = require("./utils/utils");
 const config = require('./config/base');
 const models = require('./models/database');
-const Promise = require('bluebird')
-
-
 const port = process.env.PORT || 4001;
 const index = require("./routes/index");
-
+const Socket = require('./controller/socket/socket');
 
 // Create the db connection info
 var dbConnection = {
@@ -36,213 +28,23 @@ knex.raw('select 1+1 as result')
 }).then(function() {
 	console.log("Connected + Setup PSQL Database Successfully.");
 	global.knex = knex;
+
+	// Start the express Server
+	const app = express();
+	app.use(index);
+
+	const server = http.createServer(app);
+
+	// Start the Socket
+	const io = socketIo(server); // < Interesting!
+
+	// Handle the Socket Messages
+	let socketCtrl = new Socket(io, knex);
+	socketCtrl.Start();
+
+	// Listen on Port
+	server.listen(port, () => console.log(`Listening on port ${port}`));
 }).catch(function(err) {
 	console.log("Error during process: ", err);
 	process.exit();
 });
-
-const app = express();
-app.use(index);
-
-const server = http.createServer(app);
-
-const io = socketIo(server); // < Interesting!
-
-var numUsers = 0;
-let readyUps = 0;
-let playerId = 0;
-let players = []
-
-// In memory sessions and users
-let rooms = new Rooms();
-let users = new Users();
-let player = new Player();
-
-function getNewProblem() {
-  return "This is a new problem, start!"
-}
-
-console.log("Rooms", rooms.getRooms());
-console.log("Users", users.getUsers());
-
-//Create Room
-function createRoom(host, problemId, socket, callback) {
-	const roomId = createGuid();
-
-	return player.hasRoomAlready(host)
-	.then(function(rooms) {
-		if (rooms.length > 0) {
-			console.log("Host had previous rooms, cleaning them up: ", rooms);
-			return player.deleteAllHostedRooms(rooms);
-		}
-
-		return Promise.resolve();
-	})
-	.then(function() {
-		return rooms.createNewRoom(roomId, host, problemId)
-	})
-	.then(function() {
-		return player.setRoomId(host, roomId);
-	})
-	.then(function() {
-		socket.join(roomId);
-		callback({
-			roomId,
-			problemId
-		});
-
-		console.log('User ' + host + ' created room ' + roomId + ' with problem ' + problemId);
-	})
-	.catch(function(err) {
-		console.log("Failed to create room: ", err);
-	});
-}
-
-//TODO broadcast to the other users that the room is closed (& kick them)
-function removeUserFromRoom(userId, roomId, callback) {
-	return rooms.getRoom(roomId).then((room) => {
-		if (room.host_user_uuid == userId) {
-			console.log("should close the room");
-
-			Room.closeRoom(room.uuid);
-			return;
-		}
-		console.log("Removing the user from the game (by deleting room_member rows")
-
-		Room.removePlayer(userId);
-	});
-}
-
-
-function newUser(socket, userId = '') {
-	if (userId == '') {
-		userId = createGuid();
-	}
-	const player = new Player(userId, socket);
-	
-	return users.addUser(player)
-	.then(function() {
-		socket.emit("userId", userId);
-		console.log('New User! ' + userId);
-	})
-	.catch(function(err) {
-		console.log("Failed to add user: ", err);
-	});
-}
-
-io.on("connection", (socket) => {
-
-	socket.on("getNewUserId", () => {
-		newUser(socket)
-	});
-
-	socket.on("newSocket", ({userId}) => {
-		users.getUser(userId)
-		.then(function(user) {
-			if (!user) {
-				return newUser(socket, userId)
-			}
-
-			console.log("Returning User: ", userId);
-			return Promise.resolve();
-		})
-		.then(function() {
-			return;
-		})
-		.catch(function(err) {
-			console.log("Failed with err: ", err);
-		});
-	});
-
-	socket.on("joinRoom", ({roomId, userId}, callback) => {
-
-		var roomVal;
-		users.getUser(userId)
-		.then(function(user) {
-			if (!user) {
-				return Promise.reject("User does not exist");
-			}
-
-			return rooms.getRoom(roomId);
-		})
-		.then(function(room) {
-			if (!room) {
-				return Promise.reject("Room does not exist");
-			}
-
-			roomVal = room;
-			return player.inRoomAlready(userId, room.uuid);
-		})
-		.then(function(inRoomAlready) {
-			if (!inRoomAlready) {
-				return player.setRoomId(userId, roomVal.uuid);
-			}
-
-			console.log("User is already a member of the room.");
-			return Promise.resolve();
-		})
-		.then(function() {
-
-			// Emit a message to all the sockets in the room that a new user joined
-			console.log("Emitting New Member (" + userId + ") to RoomID: " + roomId);
-			socket.to(roomId).emit('newMember', userId);
-
-			// Join this user into the room of sockets
-			socket.join(roomId);
-
-			callback({roomId, problemId: roomVal.problem_id});
-		})
-		.catch(function(msg) {
-			console.log("Failed: ", msg);
-			callback({errorMessage: msg});
-		});
-	});
-
-
-	socket.on('createRoom', function(data, callback) {
-		users.getUser(data.userId)
-		.then(function(user) {
-			if (!user) {
-				callback("User does not exist!");
-			}
-
-			console.log("Found user: ", user);
-			return createRoom(user.uuid, data.problemId, socket, callback);
-		})
-		.then(function(room) {
-			console.log("Made room");
-		})
-		.catch(function(err) {
-			callback("Failed with error: ", err);
-		});
-	});
-
-	socket.on("readyUp", (id) => {
-		console.log("ready up", id)
-		readyUps += 1;
-		if(readyUps == 2) {
-			players[0].socket.emit("gameready", getNewProblem())
-			players[1].socket.emit("gameready", getNewProblem())
-		}
-	});
-
-  socket.on("leaveRoom", (data, callback) => {
-	console.log("Client", data.userId, "wants to leave room");
-	users.getUser(data.userId)
-		.then(function(user) {
-			if (!user) {
-				callback("User does not exist!");
-			}
-			return removeUserFromRoom(user.uuid, data.roomId, callback);
-		})
-		.then( () => {
-			console.log("Successfully left room");
-			callback();
-		})
-		.error((err) => {
-			callback("Couldn't disconnect from room: ", err);
-		});
-  });
-});
-
-server.listen(port, () => console.log(`Listening on port ${port}`));

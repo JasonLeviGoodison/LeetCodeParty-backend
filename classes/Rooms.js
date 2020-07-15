@@ -1,17 +1,14 @@
 const Room = require("./Room");
 
 class Rooms {
-    constructor() {
-        this.rooms = {}
-    }
-
-    getRooms() {
-        return this.rooms;
+    constructor(knex) {
+        this.knex = knex;
     }
 
     getRoom(roomId) {
+        let self = this;
         return new Promise(function(resolve, reject) {
-           return global.knex('rooms')
+           return self.knex('rooms')
                .where({
                    uuid: roomId
                })
@@ -28,22 +25,6 @@ class Rooms {
                .catch(function(err) {
                     return reject(err);
                });
-        });
-    }
-
-    hasRoom(roomId) {
-       return this.rooms.hasOwnProperty(roomId);
-    }
-
-    createNewRoom(roomId, host, problemId) {
-        return new Promise(function(resolve, reject) {
-            return new Room(roomId, host, problemId)
-            .then(function(results) {
-                return resolve();
-            })
-            .catch(function(err) {
-                return reject(err);
-            });
         });
     }
 }
