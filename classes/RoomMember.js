@@ -1,35 +1,19 @@
 var Promise = require('bluebird');
 const { createGuid } = require("../utils/utils");
 
-class Player{
-    constructor(id, socket) {
-        this.id = id;
-        this.state = 'waiting';
-        this.code = '';
-        this.socket = socket;
-        this.roomId = '';
-    }
-
-    // On submit
-    setCode(code) {
-        this.code = ''
-    }
-
-    getCode(code) {
-        return this.code
-    }
-
-    setState(state) {
-        this.state = state;
+class RoomMember{
+    constructor(knex) {
+        this.knex = knex;
     }
 
     setRoomId(userUUID, roomId) {
+        let self = this;
         return new Promise(function(resolve, reject) {
             var roomCreatedAt = new Date();
             var participationUUID = createGuid();
 
             console.log("Setting user (" + userUUID + ") to be in room: " + roomId);
-            return global.knex('room_members')
+            return self.knex('room_members')
             .insert({
                 uuid: participationUUID,
                 room_uuid: roomId,
@@ -46,17 +30,10 @@ class Player{
         });
     }
 
-    setSocket(socket) {
-        this.socket = socket;
-    }
-    
-    getSocket() {
-        return this.socket;
-    }
-
     inRoomAlready(playerUUID, roomUUID) {
+        let self = this;
         return new Promise(function(resolve, reject) {
-            return global.knex('room_members')
+            return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
                 participant_user_uuid: playerUUID,
@@ -75,9 +52,10 @@ class Player{
     }
 
     hasRoomAlready(hostUUID) {
+        let self = this;
         return new Promise(function(resolve, reject) {
             console.log("Checking for other rooms hosted by: ", hostUUID);
-            return global.knex('rooms')
+            return self.knex('rooms')
             .where({
                 host_user_uuid: hostUUID
             })
@@ -101,16 +79,17 @@ class Player{
     }
 
     buildRoomDeletePromise(room) {
+        let self = this;
         return new Promise(function(resolve, reject) {
             console.log("Deleting Room & Participants for: ", room.uuid);
 
-            return global.knex('room_members')
+            return self.knex('room_members')
             .where({
                 room_uuid: room.uuid,
             })
             .del()
            .then(function() {
-               return global.knex('rooms')
+               return self.knex('rooms')
                .where({
                    uuid: room.uuid,
                })
@@ -126,4 +105,4 @@ class Player{
     }
 }
 
-module.exports = Player
+module.exports = RoomMember
