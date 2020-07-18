@@ -53,11 +53,12 @@ class SocketController {
                 .then(function() {
                     return self.roomMember.setRoomId(host, roomId);
                 })
-                .then(function() {
+                .then(function(nicknameInfo) {
                     socket.join(roomId);
                     callback({
                         roomId,
-                        problemId
+                        problemId,
+                        nicknameInfo
                     });
 
                     console.log('User ' + host + ' created room ' + roomId + ' with problem ' + problemId);

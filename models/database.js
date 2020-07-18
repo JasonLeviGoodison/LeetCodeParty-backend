@@ -15,6 +15,8 @@ var tables = [
 		t.string('uuid').primary();
 		t.string('room_uuid').references('uuid').inTable('rooms').notNullable();
 		t.string('participant_user_uuid').references('uuid').inTable('users').notNullable();
+		t.string('nickname').notNullable();
+		t.string('nickname_color').notNullable();
 		t.timestamps();
 	})
 ];

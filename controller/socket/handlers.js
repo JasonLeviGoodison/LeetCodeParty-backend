@@ -49,16 +49,19 @@ class SocketHandlers extends SocketController {
                 return self.roomMember.inRoomAlready(userId, room.uuid);
             })
             .then(function(inRoomAlready) {
-                if (!inRoomAlready) {
+                if (inRoomAlready == null) {
                     return self.roomMember.setRoomId(userId, roomVal.uuid);
                 }
 
                 console.log("User is already a member of the room.");
-                return Promise.resolve();
+                return Promise.resolve(inRoomAlready);
             })
-            .then(function() {
+            .then(function(nicknameInfo) {
                 // Emit a message to all the sockets in the room that a new user joined
-                return self.emitMessageToSocketRoomMembers(socket, roomId, "newMember", userId);
+                return self.emitMessageToSocketRoomMembers(socket, roomId, "newMember", {
+                    userId: userId,
+                    nicknameInfo: nicknameInfo
+                });
             })
             .then(function() {
                 // Join this user into the room of sockets

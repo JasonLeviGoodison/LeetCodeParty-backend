@@ -14,6 +14,8 @@
     "express": "^4.17.1",
     "knex": "^0.21.1",
     "pg": "^8.2.2",
+    "random-animal-name-generator": "^0.1.1",
+    "randomcolor": "^0.6.2",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {}
