@@ -31,7 +31,7 @@ class SocketHandlers extends SocketController {
 
     _joinRoom(socket, roomId, userId, callback) {
         let self = this;
-        var roomVal;
+        var roomVal, nicknameInfo, roomMembers;
         self.users.getUser(userId)
             .then(function(user) {
                 if (!user) {
@@ -56,7 +56,12 @@ class SocketHandlers extends SocketController {
                 console.log("User is already a member of the room.");
                 return Promise.resolve(inRoomAlready);
             })
-            .then(function(nicknameInfo) {
+            .then(function(nicknameI) {
+                nicknameInfo = nicknameI;
+                return self.room.getAllRoomMembers(roomId, userId);
+            })
+            .then(function(members) {
+                roomMembers = members;
                 // Emit a message to all the sockets in the room that a new user joined
                 return self.emitMessageToSocketRoomMembers(socket, roomId, "newMember", {
                     userId: userId,
@@ -68,7 +73,12 @@ class SocketHandlers extends SocketController {
                 return self.joinSocketInSocketRoom(socket, roomId);
             })
             .then(function() {
-                callback({roomId, problemId: roomVal.problem_id});
+                callback({
+                    roomId: roomId,
+                    problemId: roomVal.problem_id,
+                    members: roomMembers,
+                    nicknameInfo: nicknameInfo
+                });
             })
             .catch(function(msg) {
                 console.log("Failed: ", msg);
@@ -103,19 +113,21 @@ class SocketHandlers extends SocketController {
         let self = this;
         console.log("Client", data.userId, "wants to leave room");
         self.users.getUser(data.userId)
-            .then(function(user) {
-                if (!user) {
-                    callback("User does not exist!");
-                }
-                return self.removeUserFromRoom(socket, user.uuid, data.roomId, callback);
-            })
-            .then( () => {
-                console.log("Successfully left room");
-                callback();
-            })
-            .error((err) => {
-                callback("Couldn't disconnect from room: ", err);
-            });
+        .then(function(user) {
+            if (!user) {
+                callback("User does not exist!");
+                return;
+            }
+
+            return self.removeUserFromRoom(socket, user.uuid, data.roomId, callback);
+        })
+        .then( () => {
+            console.log("Successfully left room");
+            callback();
+        })
+        .error((err) => {
+            callback("Couldn't disconnect from room: ", err);
+        });
     }
 
     Start() {

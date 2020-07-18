@@ -17,6 +17,7 @@ var tables = [
 		t.string('participant_user_uuid').references('uuid').inTable('users').notNullable();
 		t.string('nickname').notNullable();
 		t.string('nickname_color').notNullable();
+		t.boolean('ready').defaultTo(false).notNullable();
 		t.timestamps();
 	})
 ];
