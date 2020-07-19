@@ -16,6 +16,7 @@ class Rooms {
                .limit(1)
                .then(function(result) {
                    if (result.length < 1) {
+                       console.log("Couldn't find room for: ", roomId);
                        return resolve(null);
                    }
 

@@ -94,6 +94,35 @@ class Room {
         });
         //TODO broacast to the rest of the room that this player left
     }
+
+    getAllRoomMembers(roomUUID, askingUserUUID) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.knex('room_members')
+                .where({
+                    room_uuid: roomUUID
+                })
+                .whereNot({
+                    participant_user_uuid: askingUserUUID
+                })
+                .select(
+                    'participant_user_uuid',
+                    'nickname',
+                    'nickname_color',
+                    'ready'
+                )
+                .then(function(results) {
+                    if (results.length == 0) {
+                        return resolve([]);
+                    }
+
+                    return resolve(results);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
 }
 
 module.exports = Room;
