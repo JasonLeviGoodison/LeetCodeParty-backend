@@ -72,10 +72,13 @@ class SocketController {
     }
 
     // Closes the room + removes all sockets from the socket room
-    closeRoomWrapper(roomId) {
+    closeRoomWrapper(socket, roomId) {
         let self = this;
         return new Promise(function(resolve, reject) {
             return self.room.closeRoom(roomId)
+                .then(function() {
+                    return self.emitMessageToSocketRoomMembers(socket, roomId, "roomClosing", true);
+                })
                 .then(function(result) {
                     return self.deleteSocketRoomAndAllSockets(roomId);
                 })
@@ -94,6 +97,11 @@ class SocketController {
         return new Promise(function(resolve, reject) {
            return self.room.removeRoomMember(userId)
                .then(function(result) {
+                    return self.emitMessageToSocketRoomMembers(socket, roomId, "userLeftRoom", {
+                        userId: userId
+                    })
+               })
+               .then(function(result) {
                    socket.leave(roomId)
                    return resolve();
                })
@@ -110,7 +118,7 @@ class SocketController {
             .then(function(foundRoom) {
                 if (foundRoom.host_user_uuid == userId) {
                     console.log("This user is the host, so we should close the room.");
-                    return self.closeRoomWrapper(foundRoom.uuid);
+                    return self.closeRoomWrapper(socket, foundRoom.uuid);
                 }
 
                 console.log("Removing the user from the game (by deleting room_member rows")
