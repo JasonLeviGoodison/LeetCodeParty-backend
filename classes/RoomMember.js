@@ -121,6 +121,28 @@ class RoomMember{
         });
     }
 
+    findRoomMember(userUUID, roomUUID) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.knex('room_members')
+            .where({
+                room_uuid: roomUUID,
+                participant_user_uuid: userUUID
+            })
+            .limit(1)
+            .then(function(result) {
+                if (result.length == 0) {
+                    return resolve(null);
+                }
+
+                return resolve(result[0]);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
+    }
+
     buildUniqueNickname(roomUUID, userUUID, attemptsLeft) {
         let self = this;
         return new Promise(function(resolve, reject) {
