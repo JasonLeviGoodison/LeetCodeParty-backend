@@ -92,7 +92,6 @@ class Room {
                return reject(err);
            });
         });
-        //TODO broacast to the rest of the room that this player left
     }
 
     getAllRoomMembers(roomUUID, askingUserUUID) {
