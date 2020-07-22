@@ -105,7 +105,7 @@ class SocketHandlers extends SocketController {
             });
     }
 
-    _readyUp(socket, userId, roomId, callback) {
+    _readyUp(socket, userId, roomId, newState, callback) {
         let self = this;
         self.users.getUser(userId)
         .then(function(user) {
@@ -121,13 +121,14 @@ class SocketHandlers extends SocketController {
                 return Promise.reject("User is not part of this room yet!");
             }
 
-            return self.users.updateReadyState(roomMemberEntity.uuid, true);
+            return self.users.updateReadyState(roomMemberEntity.uuid, newState);
         })
         .then(function () {
-            console.log("Client " + userId + " readied up");
+            console.log("Client " + userId + " readied up=" + newState);
 
             return self.emitMessageToSocketRoomMembers(socket, roomId, "userReadyUp", {
-               userId: userId
+                userId: userId,
+                readyState: newState
             });
         })
         .then(function() {
@@ -192,7 +193,7 @@ class SocketHandlers extends SocketController {
             });
 
             socket.on("readyUp", function(data, callback) {
-                self._readyUp(socket, data.userId, data.roomId, callback);
+                self._readyUp(socket, data.userId, data.roomId, data.newState, callback);
             });
 
             socket.on("leaveRoom", (data, callback) => {
