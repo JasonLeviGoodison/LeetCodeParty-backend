@@ -5,6 +5,11 @@ function createGuid() {
     });
 }
 
+function buildHostRoomID(roomId) {
+    return "host_socket_" + roomId;
+}
+
 module.exports = {
-  createGuid
+    createGuid,
+    buildHostRoomID
 };

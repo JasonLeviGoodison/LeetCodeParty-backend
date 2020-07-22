@@ -3,7 +3,7 @@ const Rooms = require('../../classes/Rooms');
 const Users = require('../../classes/Users');
 const RoomMember = require('../../classes/RoomMember');
 const Room = require('../../classes/Room');
-const { createGuid } = require("../../utils/utils");
+const { createGuid, buildHostRoomID } = require("../../utils/utils");
 
 class SocketController {
     constructor(io, knex) {
@@ -55,6 +55,7 @@ class SocketController {
                 })
                 .then(function(nicknameInfo) {
                     socket.join(roomId);
+                    socket.join(buildHostRoomID(roomId));
                     callback({
                         roomId,
                         problemId,
@@ -80,6 +81,9 @@ class SocketController {
                     return self.emitMessageToSocketRoomMembers(socket, roomId, "roomClosing", true);
                 })
                 .then(function(result) {
+                    // Since this is the host socket, we should also leave the host socket room
+                    socket.leave(buildHostRoomID(roomId));
+
                     return self.deleteSocketRoomAndAllSockets(roomId);
                 })
                 .then(function() {
@@ -146,6 +150,16 @@ class SocketController {
         return new Promise(function(resolve, reject) {
             console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
             socket.to(roomId).emit(msgType, msgValue);
+            return resolve();
+        });
+    }
+
+    emitMessageToSocketRoomHost(socket, roomId, msgType, msgValue) {
+        return new Promise(function(resolve, reject) {
+            var roomHostID = buildHostRoomID(roomId);
+
+            console.log("Sending the following message to room (" + roomHostID + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            socket.to(roomHostID).emit(msgType, msgValue);
             return resolve();
         });
     }

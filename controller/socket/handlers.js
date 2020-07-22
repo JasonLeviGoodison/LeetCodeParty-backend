@@ -105,8 +105,50 @@ class SocketHandlers extends SocketController {
             });
     }
 
-    _readyUp(socket, id) {
-        console.log("ready up", id)
+    _readyUp(socket, userId, roomId, newState, callback) {
+        let self = this;
+        self.users.getUser(userId)
+        .then(function(user) {
+            if (!user) {
+                callback("User does not exist!");
+                return;
+            }
+
+            return self.roomMember.findRoomMember(userId, roomId);
+        })
+        .then(function(roomMemberEntity) {
+            if (!roomMemberEntity) {
+                return Promise.reject("User is not part of this room yet!");
+            }
+
+            return self.users.updateReadyState(roomMemberEntity.uuid, newState);
+        })
+        .then(function () {
+            console.log("Client " + userId + " readied up=" + newState);
+
+            return self.emitMessageToSocketRoomMembers(socket, roomId, "userReadyUp", {
+                userId: userId,
+                readyState: newState
+            });
+        })
+        .then(function() {
+            return self.room.allUsersReady(roomId)
+        })
+        .then(function(allReady) {
+            // Let the host know the state of the room, and if they should surface the start game button
+            return self.emitMessageToSocketRoomHost(socket, roomId, "roomReady", {
+                allUsersReady: allReady
+            });
+        })
+        .then(function() {
+            callback({
+                success: true,
+                userId: userId
+            });
+        })
+        .catch(function(err) {
+            callback("Failed with error: ", err);
+        });
     }
 
     _leaveRoom(socket, data, callback) {
@@ -150,8 +192,8 @@ class SocketHandlers extends SocketController {
                 self._createRoom(socket, data, callback);
             });
 
-            socket.on("readyUp", (id) => {
-                self._readyUp(socket, id);
+            socket.on("readyUp", function(data, callback) {
+                self._readyUp(socket, data.userId, data.roomId, data.newState, callback);
             });
 
             socket.on("leaveRoom", (data, callback) => {
