@@ -158,6 +158,27 @@ class Room {
             });
         });
     }
+
+    changeRoomStarted(roomUUID, started) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            var updatedAt = new Date();
+            return self.knex('rooms')
+            .where({
+                uuid: roomUUID
+            })
+            .update({
+                started: started,
+                updated_at: updatedAt
+            })
+            .then(function(results) {
+                return resolve();
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
+    }
 }
 
 module.exports = Room;

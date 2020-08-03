@@ -9,7 +9,17 @@ function buildHostRoomID(roomId) {
     return "host_socket_" + roomId;
 }
 
+function handlerErrorGraceful(callback, caller, resp, err) {
+    console.log("Handler has failed: ", {
+        handler: caller,
+        response: resp,
+        err: err
+    })
+    callback(resp);
+}
+
 module.exports = {
     createGuid,
-    buildHostRoomID
+    buildHostRoomID,
+    handlerErrorGraceful
 };

@@ -9,6 +9,7 @@ var tables = [
 		t.string('uuid').primary();
 		t.string("problem_id").notNullable();
 		t.string("host_user_uuid").notNullable().references('uuid').inTable('users');
+		t.boolean('started').notNullable().defaultTo(false);
 		t.timestamps();
 	}),
 	createTableDefinition("room_members", function(t) {
