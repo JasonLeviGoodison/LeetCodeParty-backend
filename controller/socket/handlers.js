@@ -151,8 +151,10 @@ class SocketHandlers extends SocketController {
         });
     }
 
-    _userSubmitted(socket, userId, roomId, newState, callback) {
+    _userSubmitted(socket, userId, roomId, meta, callback) {
         let self = this;
+        let newState = meta.newState;
+        
         self.users.getUser(userId)
         .then(function(user) {
             if (!user) {
@@ -176,7 +178,8 @@ class SocketHandlers extends SocketController {
 
             return self.emitMessageToSocketRoomMembers(socket, roomId, "userSubmitted", {
                 userId: userId,
-                submittedState: newState
+                submittedState: newState,
+                meta
             });
         })
         .then(function() {
@@ -250,7 +253,7 @@ class SocketHandlers extends SocketController {
 
             socket.on("userSubmitted", (data, callback) => {
                 console.log("got user submitted")
-                self._userSubmitted(socket, data.userId, data.roomId, data.newState, callback);
+                self._userSubmitted(socket, data.userId, data.roomId, data.meta, callback);
             })
         });
     }
