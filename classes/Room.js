@@ -140,6 +140,24 @@ class Room {
             });
         });
     }
+
+    allUsersSubmitted(roomUUID) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.knex('room_members')
+            .where({
+                room_uuid: roomUUID,
+                submitted: true
+            })
+            .limit(1) // If a single result is returned, all users aren't finished
+            .then(function(result) {
+               return resolve(result.length == 0);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
+    }
 }
 
 module.exports = Room;
