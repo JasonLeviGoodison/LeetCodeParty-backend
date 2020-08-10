@@ -18,6 +18,7 @@ var tables = [
 		t.string('nickname').notNullable();
 		t.string('nickname_color').notNullable();
 		t.boolean('ready').defaultTo(false).notNullable();
+		t.boolean('submitted').defaultTo(false).notNullable();
 		t.timestamps();
 	})
 ];

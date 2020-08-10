@@ -107,6 +107,29 @@ class Users {
            });
         });
     }
+
+    updateSubmittedState(roomMemberUUID, state) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+           var updatedAt = new Date();
+
+           console.log("Setting Room Member Row (" + roomMemberUUID + ") to submitted=" + state);
+           return self.knex('room_members')
+           .where({
+               uuid: roomMemberUUID
+           })
+           .update({
+               submitted: state,
+               updated_at: updatedAt
+           })
+           .then(function(result) {
+               return resolve();
+           })
+           .catch(function(err) {
+                return reject(err);
+           });
+        });
+    }
 }
 
 module.exports = Users;
