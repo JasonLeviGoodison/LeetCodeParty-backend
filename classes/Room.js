@@ -143,11 +143,13 @@ class Room {
 
     allUsersSubmitted(roomUUID) {
         let self = this;
+        var updatedAt = new Date();
         return new Promise(function(resolve, reject) {
             return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
-                submitted: true
+                submitted: true,
+                updated_at: updatedAt
             })
             .limit(1) // If a single result is returned, all users aren't finished
             .then(function(result) {
