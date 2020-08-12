@@ -268,8 +268,7 @@ class SocketHandlers extends SocketController {
                 self._leaveRoom(socket, data, callback);
             });
 
-            socket.on("userSubmitted", (data, callback) => {
-                console.log("got user submitted")
+            socket.on(Constants.USER_SUBMITTED_MESSAGE, (data, callback) => {
                 self._userSubmitted(socket, data.userId, data.roomId, data.meta, callback);
             });
 
