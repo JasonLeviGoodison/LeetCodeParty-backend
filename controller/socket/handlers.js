@@ -1,5 +1,8 @@
 const Promise = require('bluebird');
 const SocketController = require('./socket');
+const Constants = require('../../constants/constants');
+const { handlerErrorGraceful } = require("../../utils/utils");
+const currentLine = require("current-line");
 
 class SocketHandlers extends SocketController {
     constructor(io, knex) {
@@ -25,7 +28,7 @@ class SocketHandlers extends SocketController {
                 return;
             })
             .catch(function(err) {
-                console.log("Failed with err: ", err);
+                handlerErrorGraceful(function() {}, currentLine.get(), null, err);
             });
     }
 
@@ -80,9 +83,8 @@ class SocketHandlers extends SocketController {
                     nicknameInfo: nicknameInfo
                 });
             })
-            .catch(function(msg) {
-                console.log("Failed: ", msg);
-                callback({errorMessage: msg});
+            .catch(function(err) {
+                handlerErrorGraceful(callback, currentLine.get(), {errorMessage: err}, err);
             });
     }
 
@@ -101,7 +103,7 @@ class SocketHandlers extends SocketController {
                 console.log("Made room");
             })
             .catch(function(err) {
-                callback("Failed with error: ", err);
+                handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
             });
     }
 
@@ -147,7 +149,7 @@ class SocketHandlers extends SocketController {
             });
         })
         .catch(function(err) {
-            callback("Failed with error: ", err);
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -198,7 +200,7 @@ class SocketHandlers extends SocketController {
             });
         })
         .catch(function(err) {
-            callback("Failed with error: ", err);
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -219,7 +221,22 @@ class SocketHandlers extends SocketController {
             callback();
         })
         .error((err) => {
-            callback("Couldn't disconnect from room: ", err);
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+        });
+    }
+
+    _startRoom(socket, data, callback) {
+        let self = this;
+        console.log("Starting Room: ", data.roomId);
+        return self.room.changeRoomStarted(data.roomId, true)
+        .then(function() {
+            return self.emitMessageToSocketRoomMembers(socket, data.roomId, Constants.ROOM_STARTED_MESSAGE, {});
+        })
+        .then(function() {
+            callback({success: true});
+        })
+        .catch(function(err) {
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -227,34 +244,37 @@ class SocketHandlers extends SocketController {
         var self = this;
         this.io.on("connection", (socket) => {
 
-            socket.on("getNewUserId", () => {
+            socket.on(Constants.GET_NEW_USER_ID_MESSAGE, () => {
                 self._getNewUserId(socket);
             });
 
-            socket.on("newSocket", ({userId}) => {
+            socket.on(Constants.NEW_SOCKET_MESSAGE, ({userId}) => {
                 self._newSocket(socket, userId);
             });
 
-            socket.on("joinRoom", ({roomId, userId}, callback) => {
+            socket.on(Constants.JOIN_ROOM_MESSAGE, ({roomId, userId}, callback) => {
                 self._joinRoom(socket, roomId, userId, callback);
             });
 
-            socket.on('createRoom', function(data, callback) {
+            socket.on(Constants.CREATE_ROOM_MESSAGE, function(data, callback) {
                 self._createRoom(socket, data, callback);
             });
 
-            socket.on("readyUp", function(data, callback) {
+            socket.on(Constants.READY_UP_MESSAGE, function(data, callback) {
                 self._readyUp(socket, data.userId, data.roomId, data.newState, callback);
             });
 
-            socket.on("leaveRoom", (data, callback) => {
+            socket.on(Constants.LEAVE_ROOM_MESSAGE, (data, callback) => {
                 self._leaveRoom(socket, data, callback);
             });
 
-            socket.on("userSubmitted", (data, callback) => {
-                console.log("got user submitted")
+            socket.on(Constants.USER_SUBMITTED_MESSAGE, (data, callback) => {
                 self._userSubmitted(socket, data.userId, data.roomId, data.meta, callback);
-            })
+            });
+
+            socket.on(Constants.START_ROOM_MESSAGE, (data, callback) => {
+                self._startRoom(socket, data, callback);
+            });
         });
     }
 }
