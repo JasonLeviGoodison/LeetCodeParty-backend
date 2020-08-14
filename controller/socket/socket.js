@@ -179,6 +179,14 @@ class SocketController {
             });
         });
     }
+
+    getNumUsers() {
+        return this.users.getNumUsers();
+    }
+
+    getNumRooms() {
+        return this.room.getNumRooms();
+    }
 }
 
 module.exports = SocketController;
