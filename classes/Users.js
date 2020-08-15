@@ -27,6 +27,21 @@ class Users {
         });
     }
 
+    getNumUsers() {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.knex('users')
+            .count('uuid')
+            .first()
+            .then(function(results) {
+                return resolve(results);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
+        });
+    }
+
     addUser(userUUID) {
         let self = this;
         return new Promise(function(resolve, reject) {

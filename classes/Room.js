@@ -6,7 +6,7 @@ class Room {
         this.knex = knex;
     }
 
-    static getHost(uuid) {
+    getHost(uuid) {
         let self = this;
         return new Promise(function(resolve, reject) {
             console.log("Getting host for: ", uuid);
@@ -22,6 +22,21 @@ class Room {
            .catch(function(err) {
                return reject(err);
            });
+        });
+    }
+
+    getNumRooms() {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            return self.knex('rooms')
+            .count('uuid')
+            .first()
+            .then(function(results) {
+                return resolve(results);
+            })
+            .catch(function(err) {
+                return reject(err);
+            });
         });
     }
 

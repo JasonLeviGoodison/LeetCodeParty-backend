@@ -3,10 +3,12 @@ const SocketController = require('./socket');
 const Constants = require('../../constants/constants');
 const { handlerErrorGraceful } = require("../../utils/utils");
 const currentLine = require("current-line");
+const { registerController } = require("../../routes/index");
 
 class SocketHandlers extends SocketController {
     constructor(io, knex) {
         super(io, knex);
+        registerController(this);
     }
 
     _getNewUserId(socket) {

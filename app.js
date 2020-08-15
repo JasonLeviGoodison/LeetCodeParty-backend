@@ -4,7 +4,7 @@ const socketIo = require("socket.io");
 const config = require('./config/base');
 const models = require('./models/database');
 const port = process.env.PORT || 4001;
-const index = require("./routes/index");
+const { index } = require("./routes/index");
 const SocketHandlers = require('./controller/socket/handlers');
 
 // Create the db connection info
