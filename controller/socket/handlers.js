@@ -4,6 +4,7 @@ const Constants = require('../../constants/constants');
 const { handlerErrorGraceful } = require("../../utils/utils");
 const currentLine = require("current-line");
 const { registerController } = require("../../routes/index");
+const { points } = require("../../utils/utils");
 
 class SocketHandlers extends SocketController {
     constructor(io, knex) {
@@ -179,8 +180,10 @@ class SocketHandlers extends SocketController {
         })
         .then(function () {
             console.log("Client " + userId + " submitted code " + newState);
+            let numPoints = points(meta.runTime, meta.memoryUsage, new Date(meta.startTime), new Date(meta.finishTime))
+            meta.points = numPoints;
 
-            return self.emitMessageToSocketRoomMembers(socket, roomId, "userSubmitted", {
+            return self.emitMessageToAllSocketRoomMembers(roomId, Constants.USER_SUBMITTED_MESSAGE, {
                 userId: userId,
                 submittedState: newState,
                 meta
@@ -190,10 +193,9 @@ class SocketHandlers extends SocketController {
             return self.room.allUsersSubmitted(roomId)
         })
         .then(function(allSubmitted) {
-            // Let the host know the state of the room, end game
-            return self.emitMessageToSocketRoomHost(socket, roomId, "roomSubmitted", {
-                allUsersSubmitted: allSubmitted
-            });
+            if (allSubmitted) {
+                return self.emitMessageToAllSocketRoomMembers(roomId, Constants.GAME_OVER_MESSAGE, {});
+            }
         })
         .then(function() {
             callback({

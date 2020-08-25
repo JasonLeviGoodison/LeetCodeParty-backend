@@ -18,8 +18,24 @@ function handlerErrorGraceful(callback, caller, resp, err) {
     callback(resp);
 }
 
+var secondsBetweenDates = function(dateA, dateB) {
+    return Math.abs((dateA.getTime() - dateB.getTime()) / 1000);
+}
+
+var trimLetters = function(string) {
+    return string.replace(/[^0-9\.]+/g,"");
+}
+
+function points(runTime, memoryUsage, startTime, finishTime) {
+    let seconds = secondsBetweenDates(startTime, finishTime)
+    runTime = trimLetters(runTime);
+    memoryUsage = trimLetters(memoryUsage);
+    return runTime * 2 + memoryUsage * 2 + seconds;
+}
+
 module.exports = {
     createGuid,
     buildHostRoomID,
-    handlerErrorGraceful
+    handlerErrorGraceful,
+    points
 };
