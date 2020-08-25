@@ -26,11 +26,19 @@ var trimLetters = function(string) {
     return string.replace(/[^0-9\.]+/g,"");
 }
 
+function requireUncached(module) {
+    delete require.cache[require.resolve(module)];
+    return require(module);
+}
+
 function points(runTime, memoryUsage, startTime, finishTime) {
+    let multipliers = requireUncached('../config/multipliers.json');
     let seconds = secondsBetweenDates(startTime, finishTime)
+
     runTime = trimLetters(runTime);
     memoryUsage = trimLetters(memoryUsage);
-    return runTime * 2 + memoryUsage * 2 + seconds;
+
+    return runTime * multipliers['runTime'] + memoryUsage * multipliers['memoryUsage'] + seconds * multipliers['writingTime'];
 }
 
 module.exports = {
