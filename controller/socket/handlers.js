@@ -93,20 +93,20 @@ class SocketHandlers extends SocketController {
     _createRoom(socket, data, callback) {
         let self = this;
         self.users.getUser(data.userId)
-            .then(function(user) {
-                if (!user) {
-                    callback("User does not exist!");
-                }
+        .then(function(user) {
+            if (!user) {
+                callback("User does not exist!");
+            }
 
-                console.log("Found user: ", user);
-                return self.createRoom(user.uuid, data.problemId, socket, callback);
-            })
-            .then(function(room) {
-                console.log("Made room");
-            })
-            .catch(function(err) {
-                handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
-            });
+            console.log("Found user: ", user);
+            return self.createRoom(user.uuid, data.problemId, socket, callback);
+        })
+        .then(function(room) {
+            console.log("Made room");
+        })
+        .catch(function(err) {
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+        });
     }
 
     _readyUp(socket, userId, roomId, newState, callback) {

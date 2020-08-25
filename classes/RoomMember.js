@@ -53,6 +53,7 @@ class RoomMember{
             .where({
                 room_uuid: roomUUID,
                 participant_user_uuid: playerUUID,
+                deleted_at: null
             })
             .select("*")
             .then(function(result) {
@@ -74,7 +75,8 @@ class RoomMember{
             console.log("Checking for other rooms hosted by: ", hostUUID);
             return self.knex('rooms')
             .where({
-                host_user_uuid: hostUUID
+                host_user_uuid: hostUUID,
+                deleted_at: null
             })
             .select('uuid')
             .then(function(results) {
@@ -103,14 +105,20 @@ class RoomMember{
             return self.knex('room_members')
             .where({
                 room_uuid: room.uuid,
+                deleted_at: null
             })
-            .del()
+            .update({
+                deleted_at: new Date()
+            })
            .then(function() {
                return self.knex('rooms')
                .where({
                    uuid: room.uuid,
+                   deleted_at: null
                })
-               .del()
+               .update({
+                   deleted_at: new Date()
+               })
            })
            .then(function() {
                return resolve();
@@ -127,7 +135,8 @@ class RoomMember{
             return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
-                participant_user_uuid: userUUID
+                participant_user_uuid: userUUID,
+                deleted_at: null
             })
             .limit(1)
             .then(function(result) {
@@ -152,6 +161,7 @@ class RoomMember{
             .where({
                 room_uuid: roomUUID,
                 nickname: nickname,
+                deleted_at: null
             })
             .limit(1)
             .then(function(result) {
@@ -184,6 +194,7 @@ class RoomMember{
             .where({
                 room_uuid: roomUUID,
                 nickname_color: nickname_color,
+                deleted_at: null
             })
             .limit(1)
             .then(function(result) {

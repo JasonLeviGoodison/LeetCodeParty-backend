@@ -10,6 +10,7 @@ var tables = [
 		t.string("problem_id").notNullable();
 		t.string("host_user_uuid").notNullable().references('uuid').inTable('users');
 		t.boolean('started').notNullable().defaultTo(false);
+		t.dateTime("deleted_at").defaultTo(null);
 		t.timestamps();
 	}),
 	createTableDefinition("room_members", function(t) {
@@ -20,6 +21,7 @@ var tables = [
 		t.string('nickname_color').notNullable();
 		t.boolean('ready').defaultTo(false).notNullable();
 		t.boolean('submitted').defaultTo(false).notNullable();
+		t.dateTime("deleted_at").defaultTo(null);
 		t.timestamps();
 	})
 ];
