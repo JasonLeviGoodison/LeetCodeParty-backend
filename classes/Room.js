@@ -14,6 +14,7 @@ class Room {
             return self.knex('rooms')
             .where({
                 room_uuid: uuid,
+                deleted_at: null
             })
             .limit(1)
            .then(function(entry) {
@@ -70,14 +71,20 @@ class Room {
             return self.knex('room_members')
             .where({
                 room_uuid: uuid,
+                deleted_at: null
             })
-            .del()
+            .update({
+                deleted_at: new Date()
+            })
            .then(function() {
                return self.knex('rooms')
                .where({
                    uuid: uuid,
+                   deleted_at: null
                })
-               .del()
+               .update({
+                   deleted_at: new Date()
+               })
            })
            .then(function() {
                return resolve();
@@ -97,9 +104,12 @@ class Room {
 
             return self.knex('room_members')
             .where({
-                participant_user_uuid: playerId
+                participant_user_uuid: playerId,
+                deleted_at: null
             })
-            .del()
+            .update({
+                deleted_at: new Date()
+            })
            .then(function() {
                return resolve();
            })
@@ -114,7 +124,8 @@ class Room {
         return new Promise(function(resolve, reject) {
             return self.knex('room_members')
                 .where({
-                    room_uuid: roomUUID
+                    room_uuid: roomUUID,
+                    deleted_at: null
                 })
                 .whereNot({
                     participant_user_uuid: askingUserUUID
@@ -144,7 +155,8 @@ class Room {
             return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
-                ready: false
+                ready: false,
+                deleted_at: null
             })
             .limit(1) // If a single result is returned, all users aren't ready
             .then(function(result) {
@@ -162,7 +174,8 @@ class Room {
             return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
-                submitted: false
+                submitted: false,
+                deleted_at: null
             })
             .limit(1)
             .then(function(result) {
@@ -180,7 +193,8 @@ class Room {
             var updatedAt = new Date();
             return self.knex('rooms')
             .where({
-                uuid: roomUUID
+                uuid: roomUUID,
+                deleted_at: null
             })
             .update({
                 started: started,
