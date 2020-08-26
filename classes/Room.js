@@ -174,12 +174,12 @@ class Room {
             return self.knex('room_members')
             .where({
                 room_uuid: roomUUID,
-                submitted: true,
+                submitted: false,
                 deleted_at: null
             })
-            .limit(1) // If a single result is returned, all users aren't finished
+            .limit(1)
             .then(function(result) {
-               return resolve(result.length == 0);
+               return resolve(result.length === 0);
             })
             .catch(function(err) {
                 return reject(err);

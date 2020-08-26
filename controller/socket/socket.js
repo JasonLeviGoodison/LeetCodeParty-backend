@@ -154,6 +154,15 @@ class SocketController {
         });
     }
 
+    emitMessageToAllSocketRoomMembers(roomId, msgType, msgValue) {
+        let self = this;
+        return new Promise(function(resolve, reject) {
+            console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            self.io.to(roomId).emit(msgType, msgValue);
+            return resolve();
+        });
+    }
+
     emitMessageToSocketRoomHost(socket, roomId, msgType, msgValue) {
         return new Promise(function(resolve, reject) {
             var roomHostID = buildHostRoomID(roomId);
