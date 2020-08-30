@@ -268,7 +268,7 @@ class SocketHandlers extends SocketController {
         let self = this;
         return self.submission_receipts.createSubmissionReceipt(data.roomUUID, data.viewer, data.viewed)
         .then(function(submissionReceiptUUID) {
-            return self.emitMessageToAllSocketRoomMembers(data.roomUUID, Constants.USER_VIEWED_SUBMISSION_MESSAGE, {
+            return self.emitMessageToAllSocketRoomMembers(data.roomUUID, Constants.USER_VIEWED_CODE_MESSAGE, {
                 submissionReceiptUUID: submissionReceiptUUID,
                 viewerUserUUID: data.viewer,
                 viewedUserUUID: data.viewed
