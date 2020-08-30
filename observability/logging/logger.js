@@ -2,11 +2,11 @@ const winston = require('winston');
 const Constants = require('../../constants/constants');
 
 const myConsoleFormat = winston.format.printf(function (info) {
-    return `${info.level} (${info.timestamp}): ${info.message}`;
+    return `${info.timestamp} [${info.label}] ${info.level}: ${info.message}`;
 });
 
 class Logger {
-    constructor() {
+    constructor(source) {
         var env = Constants.SERVER_ENV;
 
         var transports = [
@@ -15,6 +15,7 @@ class Logger {
                     winston.format.colorize(),
                     winston.format.splat(),
                     winston.format.timestamp(),
+                    winston.format.label({ label: source }),
                     myConsoleFormat,
                 )
             })
@@ -25,17 +26,20 @@ class Logger {
         }
 
         this.logger = winston.createLogger({
-            transports: transports,
-            defaultMeta: { service: 'user-service' },
+            transports: transports
         });
     }
 
     error(errMsg, data = null) {
-        this.logger.error(errMsg + "\nData: %o", data);
+        this.logger.error(errMsg + " %o", data);
     }
 
     info(msg, data = null) {
-        this.logger.info(msg + "\nData: %o", data);
+        this.logger.info(msg + " %o", data);
+    }
+
+    warn(msg, data = null) {
+        this.logger.warn(msg + " %o", data);
     }
 }
 

@@ -10,13 +10,13 @@ const { createGuid, buildHostRoomID } = require("../../utils/utils");
 
 class SocketController {
     constructor(io, knex) {
+        this.logger = new Logger('socket-controller');
         this.room = new Room(knex);
         this.roomMember = new RoomMember(knex);
         this.rooms = new Rooms(knex);
         this.users = new Users(knex);
         this.submissions = new Submissions(knex);
         this.submission_receipts = new SubmissionReceipts(knex);
-        this.logger = new Logger();
         this.knex = knex;
         this.io = io;
     }
@@ -30,11 +30,11 @@ class SocketController {
             return self.users.addUser(userId)
                 .then(function() {
                     socket.emit("userId", userId);
-                    console.log('New User! ' + userId);
+                    self.logger.info("New User", userId);
                     return resolve();
                 })
                 .catch(function(err) {
-                    console.log("Failed to add user: ", err);
+                    self.logger.error("Failed to add user", err);
                     return reject(err);
                 });
         });
@@ -47,7 +47,6 @@ class SocketController {
             return self.roomMember.hasRoomAlready(host)
                 .then(function(rooms) {
                     if (rooms.length > 0) {
-                        console.log("Host had previous rooms, cleaning them up: ", rooms);
                         return self.roomMember.deleteAllHostedRooms(rooms);
                     }
 
@@ -68,11 +67,14 @@ class SocketController {
                         nicknameInfo
                     });
 
-                    console.log('User ' + host + ' created room ' + roomId + ' with problem ' + problemId);
+                    self.logger.info("User created a room", {
+                        host,
+                        roomId,
+                        problemId
+                    });
                     return resolve();
                 })
                 .catch(function(err) {
-                    console.log("Failed to create room: ", err);
                     return reject(err);
                 });
         });
@@ -127,11 +129,9 @@ class SocketController {
             return self.rooms.getRoom(roomId)
             .then(function(foundRoom) {
                 if (foundRoom.host_user_uuid == userId) {
-                    console.log("This user is the host, so we should close the room.");
                     return self.closeRoomWrapper(socket, foundRoom.uuid);
                 }
 
-                console.log("Removing the user from the game (by deleting room_member rows")
                 return self.removeRoomMemberWrapper(socket, userId, roomId);
             })
             .then(function(result) {
@@ -145,7 +145,6 @@ class SocketController {
 
     joinSocketInSocketRoom(socket, roomId) {
         return new Promise(function(resolve, reject) {
-            console.log("New Socket joining Room: ", roomId);
             socket.join(roomId);
             return resolve();
         });
@@ -154,7 +153,12 @@ class SocketController {
     emitMessageToSocketRoomMembers(socket, roomId, msgType, msgValue) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            self.logger.warn("Sending the following message to room", {
+                roomId,
+                msgType,
+                msgValue,
+                warning: "This method is deprecated in favour of emitMessageToAllSocketRoomMembers"
+            });
             socket.to(roomId).emit(msgType, msgValue);
             return resolve();
         });
@@ -163,17 +167,26 @@ class SocketController {
     emitMessageToAllSocketRoomMembers(roomId, msgType, msgValue) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Sending the following message to room (" + roomId + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            self.logger.info("Sending the following message to room", {
+                roomId,
+                msgType,
+                msgValue
+            });
             self.io.to(roomId).emit(msgType, msgValue);
             return resolve();
         });
     }
 
     emitMessageToSocketRoomHost(socket, roomId, msgType, msgValue) {
+        let self = this;
         return new Promise(function(resolve, reject) {
             var roomHostID = buildHostRoomID(roomId);
 
-            console.log("Sending the following message to room (" + roomHostID + "). MessageType=" + msgType + " MsgValue=", msgValue);
+            self.logger.info("Sending the following message to room host", {
+                roomHostID,
+                msgType,
+                msgValue
+            });
             socket.to(roomHostID).emit(msgType, msgValue);
             return resolve();
         });

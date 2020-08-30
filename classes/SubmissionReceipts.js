@@ -1,9 +1,11 @@
 const { createGuid } = require("../utils/utils");
 var Promise = require('bluebird');
+const Logger = require('../observability/logging/logger');
 
 class SubmissionReceipts {
     constructor(knex) {
         this.knex = knex;
+        this.logger = new Logger("submission-receipts");
     }
 
     createSubmissionReceipt(roomUUID, viewerUUID, viewedUUID) {
