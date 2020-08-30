@@ -1,4 +1,6 @@
 module.exports = {
+    SERVER_ENV: process.env.ENV || "development",
+
     NEW_SOCKET_MESSAGE: "newSocket",
     GET_NEW_USER_ID_MESSAGE: "getNewUserId",
     JOIN_ROOM_MESSAGE: "joinRoom",

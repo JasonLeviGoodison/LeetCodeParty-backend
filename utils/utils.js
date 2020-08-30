@@ -9,15 +9,6 @@ function buildHostRoomID(roomId) {
     return "host_socket_" + roomId;
 }
 
-function handlerErrorGraceful(callback, caller, resp, err) {
-    console.log("Handler has failed: ", {
-        handler: caller,
-        response: resp,
-        err: err
-    })
-    callback(resp);
-}
-
 var secondsBetweenDates = function(dateA, dateB) {
     return Math.abs((dateA.getTime() - dateB.getTime()) / 1000);
 }
@@ -44,6 +35,5 @@ function points(runTime, memoryUsage, startTime, finishTime) {
 module.exports = {
     createGuid,
     buildHostRoomID,
-    handlerErrorGraceful,
     points
 };

@@ -5,6 +5,7 @@ const RoomMember = require('../../classes/RoomMember');
 const Room = require('../../classes/Room');
 const Submissions = require('../../classes/Submissions');
 const SubmissionReceipts = require('../../classes/SubmissionReceipts');
+const Logger = require('../../observability/logging/logger');
 const { createGuid, buildHostRoomID } = require("../../utils/utils");
 
 class SocketController {
@@ -15,6 +16,7 @@ class SocketController {
         this.users = new Users(knex);
         this.submissions = new Submissions(knex);
         this.submission_receipts = new SubmissionReceipts(knex);
+        this.logger = new Logger();
         this.knex = knex;
         this.io = io;
     }

@@ -1,7 +1,6 @@
 const Promise = require('bluebird');
 const SocketController = require('./socket');
 const Constants = require('../../constants/constants');
-const { handlerErrorGraceful } = require("../../utils/utils");
 const currentLine = require("current-line");
 const { registerController } = require("../../routes/index");
 const { points } = require("../../utils/utils");
@@ -12,8 +11,17 @@ class SocketHandlers extends SocketController {
         registerController(this);
     }
 
+    _handlerErrorGraceful(callback, caller, resp, err) {
+        this.logger.error("Handler has failed", {
+            handler: caller,
+            response: resp,
+            err: err
+        })
+        callback(resp);
+    }
+
     _executeHandler(cl, data, endpoint, executeFn) {
-        console.log("Handling Message: ", {
+        this.logger.info("Handler Called", {
             endpoint: endpoint,
             data: data,
             current_line: cl,
@@ -34,14 +42,14 @@ class SocketHandlers extends SocketController {
                     return self.newUser(socket, userId)
                 }
 
-                console.log("Returning User: ", userId);
+                self.logger.info("Returning User", userId);
                 return Promise.resolve();
             })
             .then(function() {
                 return;
             })
             .catch(function(err) {
-                handlerErrorGraceful(function() {}, currentLine.get(), null, err);
+                self._handlerErrorGraceful(function() {}, currentLine.get(), null, err);
             });
     }
 
@@ -69,7 +77,6 @@ class SocketHandlers extends SocketController {
                     return self.roomMember.setRoomId(userId, roomVal.uuid);
                 }
 
-                console.log("User is already a member of the room.");
                 return Promise.resolve(inRoomAlready);
             })
             .then(function(nicknameI) {
@@ -97,7 +104,7 @@ class SocketHandlers extends SocketController {
                 });
             })
             .catch(function(err) {
-                handlerErrorGraceful(callback, currentLine.get(), {errorMessage: err}, err);
+                self._handlerErrorGraceful(callback, currentLine.get(), {errorMessage: err}, err);
             });
     }
 
@@ -109,14 +116,13 @@ class SocketHandlers extends SocketController {
                 callback("User does not exist!");
             }
 
-            console.log("Found user: ", user);
             return self.createRoom(user.uuid, data.problemId, socket, callback);
         })
         .then(function(room) {
-            console.log("Made room");
+            self.logger.info("Created Room", room);
         })
         .catch(function(err) {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -139,8 +145,6 @@ class SocketHandlers extends SocketController {
             return self.users.updateReadyState(roomMemberEntity.uuid, newState);
         })
         .then(function () {
-            console.log("Client " + userId + " readied up=" + newState);
-
             return self.emitMessageToSocketRoomMembers(socket, roomId, "userReadyUp", {
                 userId: userId,
                 readyState: newState
@@ -162,7 +166,7 @@ class SocketHandlers extends SocketController {
             });
         })
         .catch(function(err) {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -199,7 +203,6 @@ class SocketHandlers extends SocketController {
             return self.users.updateSubmittedState(roomMemberVal.uuid, newState, submissionUUID);
         })
         .then(function () {
-            console.log("Client " + userId + " submitted code " + newState);
             let numPoints = points(meta.runTime, meta.memoryUsage, new Date(meta.startTime), new Date(meta.finishTime))
             meta.points = numPoints;
 
@@ -224,13 +227,12 @@ class SocketHandlers extends SocketController {
             });
         })
         .catch(function(err) {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
     _leaveRoom(socket, data, callback) {
         let self = this;
-        console.log("Client", data.userId, "wants to leave room");
         self.users.getUser(data.userId)
         .then(function(user) {
             if (!user) {
@@ -241,17 +243,16 @@ class SocketHandlers extends SocketController {
             return self.removeUserFromRoom(socket, user.uuid, data.roomId, callback);
         })
         .then( () => {
-            console.log("Successfully left room");
             callback();
         })
         .error((err) => {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
     _startRoom(socket, data, callback) {
         let self = this;
-        console.log("Starting Room: ", data.roomId);
+        self.logger.info("Starting Room", data);
         return self.room.changeRoomStarted(data.roomId, true)
         .then(function() {
             return self.emitMessageToSocketRoomMembers(socket, data.roomId, Constants.ROOM_STARTED_MESSAGE, {});
@@ -260,7 +261,7 @@ class SocketHandlers extends SocketController {
             callback({success: true});
         })
         .catch(function(err) {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
@@ -278,7 +279,7 @@ class SocketHandlers extends SocketController {
             callback({success: true});
         })
         .catch(function(err) {
-            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+            self._handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
         });
     }
 
