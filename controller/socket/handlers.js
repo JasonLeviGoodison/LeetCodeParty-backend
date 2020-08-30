@@ -12,6 +12,16 @@ class SocketHandlers extends SocketController {
         registerController(this);
     }
 
+    _executeHandler(cl, data, endpoint, executeFn) {
+        console.log("Handling Message: ", {
+            endpoint: endpoint,
+            data: data,
+            current_line: cl,
+        });
+
+        executeFn();
+    }
+
     _getNewUserId(socket) {
         this.newUser(socket);
     }
@@ -159,6 +169,7 @@ class SocketHandlers extends SocketController {
     _userSubmitted(socket, userId, roomId, meta, callback) {
         let self = this;
         let newState = meta.newState;
+        var roomMemberVal;
         
         self.users.getUser(userId)
         .then(function(user) {
@@ -166,17 +177,26 @@ class SocketHandlers extends SocketController {
                 callback("User does not exist!");
                 return;
             }
-            console.log("user found")
 
             return self.roomMember.findRoomMember(userId, roomId);
         })
         .then(function(roomMemberEntity) {
-            console.log("got the user", roomMemberEntity)
             if (!roomMemberEntity) {
                 return Promise.reject("User is not part of this room yet!");
             }
-            console.log("going to update submitted state")
-            return self.users.updateSubmittedState(roomMemberEntity.uuid, newState);
+            roomMemberVal = roomMemberEntity;
+
+            return self.submissions.createSubmission({
+                userUUID: userId,
+                roomUUID: roomId,
+                runTime: meta.runTime,
+                memUsage: meta.memoryUsage,
+                startWritingTime: new Date(meta.startTime),
+                finishedWritingTime: new Date(meta.finishTime)
+            });
+        })
+        .then(function(submissionUUID) {
+            return self.users.updateSubmittedState(roomMemberVal.uuid, newState, submissionUUID);
         })
         .then(function () {
             console.log("Client " + userId + " submitted code " + newState);
@@ -244,40 +264,130 @@ class SocketHandlers extends SocketController {
         });
     }
 
+    _userViewedCode(socket, data, callback) {
+        let self = this;
+        return self.submission_receipts.createSubmissionReceipt(data.roomUUID, data.viewer, data.viewed)
+        .then(function(submissionReceiptUUID) {
+            return self.emitMessageToAllSocketRoomMembers(data.roomUUID, Constants.USER_VIEWED_SUBMISSION_MESSAGE, {
+                submissionReceiptUUID: submissionReceiptUUID,
+                viewerUserUUID: data.viewer,
+                viewedUserUUID: data.viewed
+            });
+        })
+        .then(function() {
+            callback({success: true});
+        })
+        .catch(function(err) {
+            handlerErrorGraceful(callback, currentLine.get(), ("Failed with error: " + err), err);
+        });
+    }
+
     Start() {
         var self = this;
         this.io.on("connection", (socket) => {
 
             socket.on(Constants.GET_NEW_USER_ID_MESSAGE, () => {
-                self._getNewUserId(socket);
+                self._executeHandler(
+                    currentLine.get(),
+                    {},
+                    Constants.GET_NEW_USER_ID_MESSAGE,
+                    function() {
+                        self._getNewUserId(socket)
+                    }
+                );
             });
 
             socket.on(Constants.NEW_SOCKET_MESSAGE, ({userId}) => {
-                self._newSocket(socket, userId);
+                self._executeHandler(
+                    currentLine.get(),
+                    {
+                        userId
+                    },
+                    Constants.NEW_SOCKET_MESSAGE,
+                    function() {
+                        self._newSocket(socket, userId);
+                    }
+                );
             });
 
             socket.on(Constants.JOIN_ROOM_MESSAGE, ({roomId, userId}, callback) => {
-                self._joinRoom(socket, roomId, userId, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    {
+                        roomId,
+                        userId
+                    },
+                    Constants.JOIN_ROOM_MESSAGE,
+                    function() {
+                        self._joinRoom(socket, roomId, userId, callback);
+                    }
+                );
             });
 
             socket.on(Constants.CREATE_ROOM_MESSAGE, function(data, callback) {
-                self._createRoom(socket, data, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.CREATE_ROOM_MESSAGE,
+                    function() {
+                        self._createRoom(socket, data, callback);
+                    }
+                );
             });
 
             socket.on(Constants.READY_UP_MESSAGE, function(data, callback) {
-                self._readyUp(socket, data.userId, data.roomId, data.newState, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.READY_UP_MESSAGE,
+                    function() {
+                        self._readyUp(socket, data.userId, data.roomId, data.newState, callback);
+                    }
+                );
             });
 
             socket.on(Constants.LEAVE_ROOM_MESSAGE, (data, callback) => {
-                self._leaveRoom(socket, data, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.LEAVE_ROOM_MESSAGE,
+                    function() {
+                        self._leaveRoom(socket, data, callback);
+                    }
+                );
             });
 
             socket.on(Constants.USER_SUBMITTED_MESSAGE, (data, callback) => {
-                self._userSubmitted(socket, data.userId, data.roomId, data.meta, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.USER_SUBMITTED_MESSAGE,
+                    function() {
+                        self._userSubmitted(socket, data.userId, data.roomId, data.meta, callback);
+                    }
+                );
             });
 
             socket.on(Constants.START_ROOM_MESSAGE, (data, callback) => {
-                self._startRoom(socket, data, callback);
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.START_ROOM_MESSAGE,
+                    function() {
+                        self._startRoom(socket, data, callback);
+                    }
+                );
+            });
+
+            socket.on(Constants.USER_VIEWED_CODE_MESSAGE, (data, callback) => {
+                self._executeHandler(
+                    currentLine.get(),
+                    data,
+                    Constants.USER_VIEWED_CODE_MESSAGE,
+                    function() {
+                        self._userViewedCode(socket, data, callback);
+                    }
+                );
             });
         });
     }

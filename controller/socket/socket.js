@@ -3,6 +3,8 @@ const Rooms = require('../../classes/Rooms');
 const Users = require('../../classes/Users');
 const RoomMember = require('../../classes/RoomMember');
 const Room = require('../../classes/Room');
+const Submissions = require('../../classes/Submissions');
+const SubmissionReceipts = require('../../classes/SubmissionReceipts');
 const { createGuid, buildHostRoomID } = require("../../utils/utils");
 
 class SocketController {
@@ -11,6 +13,8 @@ class SocketController {
         this.roomMember = new RoomMember(knex);
         this.rooms = new Rooms(knex);
         this.users = new Users(knex);
+        this.submissions = new Submissions(knex);
+        this.submission_receipts = new SubmissionReceipts(knex);
         this.knex = knex;
         this.io = io;
     }

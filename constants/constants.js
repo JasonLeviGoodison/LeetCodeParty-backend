@@ -8,5 +8,7 @@ module.exports = {
     START_ROOM_MESSAGE: "startRoom",
     ROOM_STARTED_MESSAGE: "roomStarted",
     USER_SUBMITTED_MESSAGE: "userSubmitted",
-    GAME_OVER_MESSAGE: "gameOver"
+    GAME_OVER_MESSAGE: "gameOver",
+    USER_VIEWED_CODE_MESSAGE: "userViewedCode",
+    USER_VIEWED_SUBMISSION_MESSAGE: "userViewedSubmission"
 };

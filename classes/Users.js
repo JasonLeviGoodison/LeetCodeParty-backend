@@ -123,7 +123,7 @@ class Users {
         });
     }
 
-    updateSubmittedState(roomMemberUUID, state) {
+    updateSubmittedState(roomMemberUUID, state, latestSubmissionUUID) {
         let self = this;
         return new Promise(function(resolve, reject) {
            var updatedAt = new Date();
@@ -135,6 +135,7 @@ class Users {
            })
            .update({
                submitted: state,
+               latest_submission_uuid: latestSubmissionUUID,
                updated_at: updatedAt
            })
            .then(function(result) {
