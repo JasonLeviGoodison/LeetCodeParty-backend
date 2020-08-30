@@ -16,7 +16,7 @@ class SocketHandlers extends SocketController {
             handler: caller,
             response: resp,
             err: err
-        })
+        });
         callback(resp);
     }
 

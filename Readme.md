@@ -21,6 +21,10 @@ Keep track of this database name (leetparty), you will need to add this to the n
 
 _Side Note: I also am a pretty big fan of this  [GUI representation app](https://eggerapps.at/postico/)  of a your psql databases. Feel free to use it to visualize your data a bit easier_
 
+## Error Observability
+
+We are utilizing [rollbar.com](rollbar.com) to capture and track our error messages.
+
 ## Database Migrations
 
 ### Adding a new Column

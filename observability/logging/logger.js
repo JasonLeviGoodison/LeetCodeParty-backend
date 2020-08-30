@@ -1,5 +1,7 @@
 const winston = require('winston');
 const Constants = require('../../constants/constants');
+const Secrets = require('../../config/secrets');
+var Rollbar = require("rollbar");
 
 const myConsoleFormat = winston.format.printf(function (info) {
     return `${info.timestamp} [${info.label}] ${info.level}: ${info.message}`;
@@ -22,7 +24,11 @@ class Logger {
         ];
 
         if (env == "production") {
-            // TODO: Add Sentry
+            this.rollbar = new Rollbar({
+                accessToken: Secrets.ROLLBAR_ACCESS_CODE,
+                captureUncaught: true,
+                captureUnhandledRejections: true
+            });
         }
 
         this.logger = winston.createLogger({
@@ -31,15 +37,21 @@ class Logger {
     }
 
     error(errMsg, data = null) {
-        this.logger.error(errMsg + " %o", data);
+        let self = this;
+        this.rollbar.error(errMsg, null, data, function() {
+            self.logger.error(errMsg + " %o", data);
+        });
+    }
+
+    warn(msg, data = null) {
+        let self = this;
+        this.rollbar.warn(msg, null, data, function() {
+            self.logger.warn(msg + " %o", data);
+        });
     }
 
     info(msg, data = null) {
         this.logger.info(msg + " %o", data);
-    }
-
-    warn(msg, data = null) {
-        this.logger.warn(msg + " %o", data);
     }
 }
 

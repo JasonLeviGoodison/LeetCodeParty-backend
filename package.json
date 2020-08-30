@@ -17,6 +17,7 @@
     "pg": "^8.2.2",
     "random-animal-name": "^0.1.0",
     "randomcolor": "^0.6.2",
+    "rollbar": "^2.19.3",
     "socket.io": "^2.3.0",
     "winston": "^3.3.3"
   },
