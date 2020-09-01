@@ -1,25 +1,27 @@
 {
-  "name": "CodingComp",
-  "version": "1.0.0",
+  "name": "leetcodeparty",
+  "version": "0.0.5",
+  "private": true,
   "description": "",
-  "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "dependencies": {
     "bluebird": "^3.7.2",
     "current-line": "^1.0.1",
-    "express": "^4.17.1",
     "knex": "^0.21.1",
     "pg": "^8.2.2",
     "random-animal-name": "^0.1.0",
     "randomcolor": "^0.6.2",
     "rollbar": "^2.19.3",
+    "winston": "^3.3.3",
     "socket.io": "^2.3.0",
-    "winston": "^3.3.3"
+    "ejs": "latest",
+    "aws-sdk": "latest",
+    "express": "latest",
+    "body-parser": "latest"
+  },
+  "scripts": {
+    "start": "node app.js"
   },
   "devDependencies": {}
 }
