@@ -1,8 +1,10 @@
 const Room = require("./Room");
+const Logger = require('../observability/logging/logger');
 
 class Rooms {
     constructor(knex) {
         this.knex = knex;
+        this.logger = new Logger("rooms");
     }
 
     getRoom(roomId) {
@@ -16,11 +18,11 @@ class Rooms {
                .limit(1)
                .then(function(result) {
                    if (result.length < 1) {
-                       console.log("Couldn't find room for: ", roomId);
+                       self.logger.error("Couldn't find room", roomId);
                        return resolve(null);
                    }
 
-                   console.log("Found Room: ", result[0]);
+                   self.logger.info("Found Room", result[0]);
                    return resolve(result[0]);
                })
                .catch(function(err) {

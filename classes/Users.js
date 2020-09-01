@@ -1,8 +1,10 @@
 var Promise = require('bluebird');
+const Logger = require('../observability/logging/logger');
 
 class Users {
     constructor(knex) {
         this.knex = knex;
+        this.logger = new Logger("users");
     }
 
     getUser(userId) {
@@ -47,7 +49,6 @@ class Users {
         return new Promise(function(resolve, reject) {
             return self.userExists(userUUID)
             .then(function(exists) {
-                console.log("User Exists = ", exists);
                 if (!exists) {
                     return self.createNewUser(userUUID);
                 }
@@ -85,7 +86,7 @@ class Users {
         return new Promise(function(resolve, reject) {
             var createdAt = new Date();
 
-            console.log("Creating New User: ", userUUID);
+            self.logger.info("Creating new User", userUUID);
             return self.knex('users').insert({
                 uuid: userUUID,
                 created_at: createdAt,
@@ -105,7 +106,10 @@ class Users {
         return new Promise(function(resolve, reject) {
            var updatedAt = new Date();
 
-           console.log("Setting Room Member Row (" + roomMemberUUID + ") to ready=" + state);
+           self.logger.info("Setting Room Member to Ready", {
+               roomMemberUUID,
+               state
+           });
            return self.knex('room_members')
            .where({
                uuid: roomMemberUUID
@@ -123,18 +127,22 @@ class Users {
         });
     }
 
-    updateSubmittedState(roomMemberUUID, state) {
+    updateSubmittedState(roomMemberUUID, state, latestSubmissionUUID) {
         let self = this;
         return new Promise(function(resolve, reject) {
            var updatedAt = new Date();
 
-           console.log("Setting Room Member Row (" + roomMemberUUID + ") to submitted=" + state);
+            self.logger.info("Setting Room Member to Submitted", {
+                roomMemberUUID,
+                state
+            });
            return self.knex('room_members')
            .where({
                uuid: roomMemberUUID
            })
            .update({
                submitted: state,
+               latest_submission_uuid: latestSubmissionUUID,
                updated_at: updatedAt
            })
            .then(function(result) {

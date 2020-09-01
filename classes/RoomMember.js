@@ -1,11 +1,13 @@
 var Promise = require('bluebird');
 const { createGuid } = require("../utils/utils");
 const randomAnimalName = require('random-animal-name');
+const Logger = require('../observability/logging/logger');
 const randomColor = require('randomcolor');
 
 class RoomMember{
     constructor(knex) {
         this.knex = knex;
+        this.logger = new Logger("room-member");
     }
 
     setRoomId(userUUID, roomId) {
@@ -22,7 +24,12 @@ class RoomMember{
             })
             .then(function(nc) {
                 nickname_color = nc;
-                console.log("Setting user (" + userUUID + ") Nickname (" + nickname + ") and Color (" + nickname_color + ") to be in room: " + roomId);
+                self.logger.info("Setting User to be in the room", {
+                    userUUID,
+                    nickname,
+                    nickname_color,
+                    roomId
+                });
                 return self.knex('room_members')
                 .insert({
                     uuid: participationUUID,
@@ -72,7 +79,7 @@ class RoomMember{
     hasRoomAlready(hostUUID) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Checking for other rooms hosted by: ", hostUUID);
+            self.logger.info("Check for other rooms hosted by user", hostUUID);
             return self.knex('rooms')
             .where({
                 host_user_uuid: hostUUID,
@@ -100,8 +107,7 @@ class RoomMember{
     buildRoomDeletePromise(room) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Deleting Room & Participants for: ", room.uuid);
-
+            self.logger.info("Deleting Room & Participants", room);
             return self.knex('room_members')
             .where({
                 room_uuid: room.uuid,
@@ -170,7 +176,7 @@ class RoomMember{
                 }
                 if (attemptsLeft == 0) {
                     // Ceiling of attempts, fallback to userUUID worst case
-                    console.log("Ran out of attempts to get a unique nickname! Fallback to UUID.");
+                    self.logger.error("Ran out of attempts to get a unique nickname! Falling back to UUID");
                     return resolve(userUUID);
                 }
 
@@ -203,7 +209,7 @@ class RoomMember{
                 }
                 if (attemptsLeft == 0) {
                     // Ceiling of attempts, fallback to userUUID worst case
-                    console.log("Ran out of attempts to get a unique nickname! Fallback to #af59f1.");
+                    self.logger.error("Ran out of attempts to get a unique nickname color, falling back to #af59f1");
                     return resolve("#af59f1");
                 }
 

@@ -1,16 +1,17 @@
 const { createGuid } = require("../utils/utils");
+const Logger = require('../observability/logging/logger');
 var Promise = require('bluebird');
 
 class Room {
-    constructor(knex) {
+    constructor(knex, logger) {
         this.knex = knex;
+        this.logger = new Logger('room');
     }
 
     getHost(uuid) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Getting host for: ", uuid);
-
+            self.logger.info("Getting Host", uuid);
             return self.knex('rooms')
             .where({
                 room_uuid: uuid,
@@ -66,8 +67,7 @@ class Room {
     closeRoom(uuid) {
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Deleting Room & Participants for: ", uuid);
-
+            self.logger.info("Deleting Room & Participants", uuid);
             return self.knex('room_members')
             .where({
                 room_uuid: uuid,
@@ -97,11 +97,11 @@ class Room {
 
     removeRoomMember(playerId) {
         //Remove the player from the room
-        console.log("going to remove player from room_members db");
         let self = this;
         return new Promise(function(resolve, reject) {
-            console.log("Removing player from room");
-
+            self.logger.info("Going to remove player from room_members db", {
+                playerUUID: playerId
+            });
             return self.knex('room_members')
             .where({
                 participant_user_uuid: playerId,

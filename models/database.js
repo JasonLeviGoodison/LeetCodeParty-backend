@@ -21,6 +21,26 @@ var tables = [
 		t.string('nickname_color').notNullable();
 		t.boolean('ready').defaultTo(false).notNullable();
 		t.boolean('submitted').defaultTo(false).notNullable();
+		t.string('latest_submission_uuid').references('uuid').inTable('submissions');
+		t.dateTime("deleted_at").defaultTo(null);
+		t.timestamps();
+	}),
+	createTableDefinition("submissions", function(t) {
+		t.string('uuid').primary();
+		t.string('room_uuid').references('uuid').inTable('rooms').notNullable();
+		t.string('user_uuid').references('uuid').inTable('users').notNullable();
+		t.string('run_time').notNullable();
+		t.string('memory_usage').notNullable();
+		t.dateTime('start_writing_time').notNullable();
+		t.dateTime('end_writing_time').notNullable();
+		t.dateTime("deleted_at").defaultTo(null);
+		t.timestamps();
+	}),
+	createTableDefinition("submission_receipts", function(t) {
+		t.string('uuid').primary();
+		t.string('submission_uuid').references('uuid').inTable('submissions').notNullable();
+		t.string('viewer_user_uuid').references('uuid').inTable('users').notNullable();
+		t.string('room_uuid').references('uuid').inTable('rooms').notNullable();
 		t.dateTime("deleted_at").defaultTo(null);
 		t.timestamps();
 	})
