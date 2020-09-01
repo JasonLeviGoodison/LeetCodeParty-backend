@@ -1,46 +1,20 @@
 // Update with your config settings.
+let Secrets = require('./config/secrets');
+let Base = require('./config/secrets');
 
 module.exports = {
-
   development: {
     client: 'postgresql',
-    connection: {
-      database: 'leetparty',
-      user:     '',
-      password: ''
-    },
+    host     : "localhost",
+    user     : "leetparty",
+    password : "",
+    port     : ""
   },
-
-  staging: {
-    client: 'postgresql',
-    connection: {
-      database: 'my_db',
-      user:     'username',
-      password: 'password'
-    },
-    pool: {
-      min: 2,
-      max: 10
-    },
-    migrations: {
-      tableName: 'knex_migrations'
-    }
-  },
-
   production: {
     client: 'postgresql',
-    connection: {
-      database: 'my_db',
-      user:     'username',
-      password: 'password'
-    },
-    pool: {
-      min: 2,
-      max: 10
-    },
-    migrations: {
-      tableName: 'knex_migrations'
-    }
+    host     : Base.PG_CONNECTION_HOST,
+    user     : Base.PG_CONNECTION_DB_NAME,
+    password : Secrets.DB_PASSWORD,
+    port     : "5432"
   }
-
 };

@@ -6,18 +6,14 @@ const models = require('./models/database');
 const port = process.env.PORT || 4001;
 const { index } = require("./routes/index");
 const SocketHandlers = require('./controller/socket/handlers');
-
-// Create the db connection info
-var dbConnection = {
-	host: config.PG_CONNECTION_HOST,
-	database: config.PG_CONNECTION_DB_NAME
-};
+var dbConnection = require('./knexfile.js')[process.env.ENV || "development"];
 
 // Create the database connection
 var dbConfig = {
 	client: 'pg',
 	connection: dbConnection,
-	searchPath: ['knex', 'public']
+	searchPath: ['knex', 'public'],
+	pool: {min: 0, max: 10}
 };
 
 var knex = require('knex')(dbConfig);
