@@ -99,7 +99,9 @@ class Room {
         //Remove the player from the room
         let self = this;
         return new Promise(function(resolve, reject) {
-            self.logger.info("Going to remove player from room_members db");
+            self.logger.info("Going to remove player from room_members db", {
+                playerUUID: playerId
+            });
             return self.knex('room_members')
             .where({
                 participant_user_uuid: playerId,

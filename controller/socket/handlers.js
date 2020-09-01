@@ -20,14 +20,14 @@ class SocketHandlers extends SocketController {
         callback(resp);
     }
 
-    _executeHandler(cl, data, endpoint, executeFn) {
+    _executeHandler(cl, data, endpoint, callback) {
         this.logger.info("Handler Called", {
             endpoint: endpoint,
             data: data,
             current_line: cl,
         });
 
-        executeFn();
+        callback();
     }
 
     _getNewUserId(socket) {
