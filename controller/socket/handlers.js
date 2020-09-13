@@ -30,8 +30,16 @@ class SocketHandlers extends SocketController {
         callback();
     }
 
-    _getNewUserId(socket) {
-        this.newUser(socket);
+    _getNewUserId(socket, callback) {
+        this.newUser(socket)
+        .then(function(userId) {
+            return callback({
+                userUUID: userId
+            });
+        })
+        .catch(function(err) {
+            self._handlerErrorGraceful(function() {}, currentLine.get(), null, err);
+        });
     }
 
     _newSocket(socket, userId) {
@@ -287,13 +295,13 @@ class SocketHandlers extends SocketController {
         var self = this;
         this.io.on("connection", (socket) => {
 
-            socket.on(Constants.GET_NEW_USER_ID_MESSAGE, () => {
+            socket.on(Constants.GET_NEW_USER_ID_MESSAGE, (data, callback) => {
                 self._executeHandler(
                     currentLine.get(),
                     {},
                     Constants.GET_NEW_USER_ID_MESSAGE,
                     function() {
-                        self._getNewUserId(socket)
+                        self._getNewUserId(socket, callback)
                     }
                 );
             });

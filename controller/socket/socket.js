@@ -31,7 +31,7 @@ class SocketController {
                 .then(function() {
                     socket.emit("userId", userId);
                     self.logger.info("New User", userId);
-                    return resolve();
+                    return resolve(userId);
                 })
                 .catch(function(err) {
                     self.logger.error("Failed to add user", err);
