@@ -3,7 +3,7 @@ const Logger = require('../observability/logging/logger');
 var Promise = require('bluebird');
 
 class Room {
-    constructor(knex, logger) {
+    constructor(knex) {
         this.knex = knex;
         this.logger = new Logger('room');
     }

@@ -35,5 +35,8 @@ function points(runTime, memoryUsage, startTime, finishTime) {
 module.exports = {
     createGuid,
     buildHostRoomID,
-    points
+    points,
+    requireUncached,
+    trimLetters,
+    secondsBetweenDates
 };

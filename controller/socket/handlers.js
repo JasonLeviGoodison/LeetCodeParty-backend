@@ -210,9 +210,11 @@ class SocketHandlers extends SocketController {
         .then(function(submissionUUID) {
             return self.users.updateSubmittedState(roomMemberVal.uuid, newState, submissionUUID);
         })
-        .then(function () {
-            let numPoints = points(meta.runTime, meta.memoryUsage, new Date(meta.startTime), new Date(meta.finishTime))
-            meta.points = numPoints;
+        .then(function() {
+            return self.scoring.buildPoints(userId, roomId, meta.runTime, meta.memoryUsage, new Date(meta.startTime), new Date(meta.finishTime))
+        })
+        .then(function (pointsResponse) {
+            meta.points = pointsResponse;
 
             return self.emitMessageToAllSocketRoomMembers(roomId, Constants.USER_SUBMITTED_MESSAGE, {
                 userId: userId,
