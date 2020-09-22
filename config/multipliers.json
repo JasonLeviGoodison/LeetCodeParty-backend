@@ -1,5 +1,43 @@
 {
     "runTime": 0,
-    "memoryUsage": 0,
-    "writingTime": 1
+    "runTimePiecewise": [
+        {
+            "min": 0,
+            "max": 150,
+            "points": 50
+        },
+        {
+            "min": 151,
+            "max": 350,
+            "points": 100
+        },
+        {
+            "min": 351,
+            "max": 750,
+            "points": 200
+        },
+        {
+            "min": 751,
+            "max": null,
+            "points": 500
+        }
+    ],
+    "memoryUsage": 1.9,
+    "writingTimePiecewise": [
+        {
+            "min": 0,
+            "max": 600,
+            "exp": 1
+        },
+        {
+            "min": 601,
+            "max": 1200,
+            "exp": 1.05
+        },
+        {
+            "min": 1201,
+            "max": null,
+            "exp": 1.1
+        }
+    ]
 }

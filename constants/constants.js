@@ -11,5 +11,11 @@ module.exports = {
     ROOM_STARTED_MESSAGE: "roomStarted",
     USER_SUBMITTED_MESSAGE: "userSubmitted",
     GAME_OVER_MESSAGE: "gameOver",
-    USER_VIEWED_CODE_MESSAGE: "userViewedCode"
+    USER_VIEWED_CODE_MESSAGE: "userViewedCode",
+
+    // Point IDs
+    RUNTIME_POINTS_ID: "runtimePointsID",
+    MEM_POINTS_ID: "memoryPointsID",
+    WRITING_TIME_POINTS_ID: "writingTimePointsID",
+    READ_RECEIPT_POINTS_ID: "readReceiptPointsID"
 };
