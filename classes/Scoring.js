@@ -5,48 +5,39 @@ var Promise = require('bluebird');
 
 const POINTS_FOR_VIEWING_CODE = 1000;
 
+class ScoringExplanation {
+    constructor(id, pts) {
+        this.response = {
+            identifier: id,
+            points: Math.floor(pts),
+            range: null,
+            exponent: null,
+            exponentOriginal: null
+        }
+    }
+
+    Get() {
+        return this.response;
+    }
+
+    isPointsSet() {
+        return this.response !== null;
+    }
+
+    setRange(range) {
+        this.response.range = range;
+    }
+
+    setExponent(exp, originalVal) {
+        this.response.exponent = exp;
+        this.response.exponentOriginal = originalVal;
+    }
+}
+
 class Scoring {
     constructor(knex) {
         this.knex = knex;
         this.logger = new Logger('scoring');
-    }
-
-    buildPointsConstant(id, points) {
-        return {
-            identifier: id,
-            points: Math.floor(points),
-            range: null,
-            exponent: null
-        }
-    }
-
-    buildPointsRangeBased(id, points, range) {
-        return {
-            identifier: id,
-            points: Math.floor(points),
-            range: range,
-            exponent: null
-        }
-    }
-
-    buildPointsRangeExpBased(id, points, range, exponent, exponentOriginal) {
-        return {
-            identifier: id,
-            points: Math.floor(points),
-            range: range,
-            exponent: exponent,
-            exponentOriginal: exponentOriginal
-        }
-    }
-
-    buildPointsExponentBased(id, points, exponent, exponentOriginal) {
-        return {
-            identifier: id,
-            points: Math.floor(points),
-            range: null,
-            exponent: exponent,
-            exponentOriginal: exponentOriginal
-        }
     }
 
     _buildMaxValSafely(max) {
@@ -57,38 +48,56 @@ class Scoring {
         return max;
     }
 
+
+    findRangeBuildResponse(multipliers, val, multiName, buildRespFn) {
+        let self = this;
+
+        return new Promise(function(resolve, reject) {
+            var response;
+            for (var i = 0; i < multipliers[multiName].length; i++) {
+                var multiRange = multipliers[multiName][i];
+
+                if (val >= multiRange.min && (multiRange.max === null || val <= multiRange.max)) {
+                    response = buildRespFn(multiRange);
+                    break;
+                }
+            }
+
+            if (!response.isPointsSet()) {
+                self.logger.error('Not in any multiplier range!', {
+                    multipliers,
+                    response,
+                    val
+                });
+                return reject('Runtime not in any multiplier range! This should never happen');
+            }
+
+            return resolve(response.Get());
+        });
+    }
+
     buildRuntimePoints(multipliers, runTime) {
         let self = this;
         return new Promise(function(resolve, reject) {
             runTime = trimLetters(runTime);
 
-            var points = null;
-            var rangeChosen = null;
-            for (var i = 0; i < multipliers['runTimePiecewise'].length; i++) {
-                var multiRange = multipliers['runTimePiecewise'][i];
+            return self.findRangeBuildResponse(multipliers, runTime, 'runTimePiecewise', function(multiRange) {
+                var response = new ScoringExplanation(Constants.RUNTIME_POINTS_ID, multiRange.points);
+                response.setRange([multiRange.min + "ms", self._buildMaxValSafely(multiRange.max) + "ms"]);
 
-                if (runTime >= multiRange.min && (multiRange.max === null || runTime <= multiRange.max)) {
-                    points = multiRange.points;
-                    rangeChosen = [multiRange.min + "ms", self._buildMaxValSafely(multiRange.max) + "ms"];
-                    break;
-                }
-            }
-
-            if (points === null || rangeChosen === null) {
-                self.logger.error('Runtime not in any multiplier range!', {
-                    multipliers,
-                    rangeChosen,
-                    runTime
+                return response;
+            })
+            .then(function(response) {
+                self.logger.info("Using RunTime Points", {
+                    runTime,
+                    response,
                 });
-                return reject('Runtime not in any multiplier range! This should never happen');
-            }
 
-            self.logger.info("Using RunTime Points", {
-                runTimePoints: points,
-                runTime,
-                rangeChosen,
+                return resolve(response);
+            })
+            .catch(function(err) {
+                return reject(err);
             });
-            return resolve(self.buildPointsRangeBased(Constants.RUNTIME_POINTS_ID, points, rangeChosen));
         });
     }
 
@@ -101,12 +110,14 @@ class Scoring {
             let exp = multipliers['memoryUsage'];
             var points = Math.pow(memoryUsage, exp);
 
+            var response = new ScoringExplanation(Constants.MEM_POINTS_ID, points);
+            response.setExponent(exp, originalMemUsage);
+
             self.logger.info("Using Memory Points", {
-                memPoints: points,
                 memoryUsage,
-                exp,
+                response,
             })
-            return resolve(self.buildPointsExponentBased(Constants.MEM_POINTS_ID, points, exp, originalMemUsage));
+            return resolve(response.Get());
         });
     }
 
@@ -114,40 +125,27 @@ class Scoring {
         let self = this;
 
         let seconds = secondsBetweenDates(startTime, finishTime);
-        let multiplierVal = multipliers['writingTimePiecewise'];
         return new Promise(function(resolve, reject) {
 
-            var points = null;
-            var rangeResp = null;
-            for (var i = 0; i < multiplierVal.length; i++) {
-                var range = multiplierVal[i];
+            return self.findRangeBuildResponse(multipliers, seconds, 'writingTimePiecewise', function(multiRange) {
+                var points = Math.pow(seconds, multiRange.exp);
+                var response = new ScoringExplanation(Constants.WRITING_TIME_POINTS_ID, points);
+                response.setRange(multiRange);
+                response.setExponent(multiRange.exp, (Math.round(seconds * 10) / 10) + " sec");
 
-                if (seconds >= range.min && (range.max === null || seconds <= range.max)) {
-                    points = Math.pow(seconds, range.exp);
-                    rangeResp = range;
-                    break;
-                }
-            }
-
-            if (points === null || rangeResp === null) {
-                self.logger.error('Writing Time not in any multiplier range!', {
-                    seconds
+                return response;
+            })
+            .then(function(response) {
+                self.logger.info("Using Writing Time Points", {
+                    seconds,
+                    response,
                 });
-                return reject('Writing Time not in any multiplier range! This should never happen');
-            }
 
-            self.logger.info("Using Writing Time Points", {
-                writingTimePoints: points,
-                seconds,
-                rangeResp,
+                return resolve(response);
+            })
+            .catch(function(err) {
+                return reject(err);
             });
-            return resolve(self.buildPointsRangeExpBased(
-                Constants.WRITING_TIME_POINTS_ID,
-                points,
-                [rangeResp.min, self._buildMaxValSafely(rangeResp.max)],
-                rangeResp.exp,
-                Math.floor(seconds) + " sec",
-            ));
         });
     }
 
@@ -173,11 +171,12 @@ class Scoring {
                     points = POINTS_FOR_VIEWING_CODE;
                 }
 
+                var response = new ScoringExplanation(Constants.READ_RECEIPT_POINTS_ID, points);
                 self.logger.info("Using Read Receipt Points", {
-                    points,
+                    response,
                     count,
                 });
-                return resolve(self.buildPointsConstant(Constants.READ_RECEIPT_POINTS_ID, points));
+                return resolve(response.Get());
             })
             .catch(function(err) {
                 return reject(err);
