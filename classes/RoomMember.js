@@ -3,6 +3,9 @@ const { createGuid } = require("../utils/utils");
 const randomAnimalName = require('random-animal-name');
 const Logger = require('../observability/logging/logger');
 const randomColor = require('randomcolor');
+const tinycolor = require("tinycolor2");
+
+const brightnessThreshold = 200;
 
 class RoomMember{
     constructor(knex) {
@@ -42,9 +45,13 @@ class RoomMember{
                 });
             })
             .then(function() {
+                return self.doesColorNeedBlackBorder(nickname_color);
+            })
+            .then(function(blackBorder) {
                 return resolve({
                     nickname: nickname,
-                    nickname_color: nickname_color
+                    nickname_color: nickname_color,
+                    add_black_border: blackBorder
                 });
             })
             .catch(function(err) {
@@ -221,6 +228,25 @@ class RoomMember{
             .catch(function(err) {
                 return reject(err);
             });
+        });
+    }
+
+    doesColorNeedBlackBorder(hexColor) {
+        let self = this;
+
+        return new Promise(function(resolve, reject) {
+            var color = tinycolor(hexColor);
+
+            if (!color.isValid()) {
+                self.logger.error("Failed to parse color with TinyColor", {
+                    hexColor,
+                });
+                // Lets not error out the flow over this
+                return resolve(false);
+            }
+
+            var brightness = color.getBrightness();
+            return resolve(brightness > brightnessThreshold);
         });
     }
 }
