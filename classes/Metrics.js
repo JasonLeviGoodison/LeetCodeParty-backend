@@ -1,5 +1,7 @@
 const Promise = require('bluebird');
 const Logger = require('../observability/logging/logger');
+const { formatDate } = require('../utils/utils');
+const randomColor = require('randomcolor');
 
 class Metrics {
     constructor(knex) {
@@ -41,26 +43,55 @@ class Metrics {
         };
     }
 
-    _extractLabelsAndDataFromGroupedResponse(data, groupName) {
+    _buildChartJSPieGraph(labels, dataVal, bcolors) {
+        return {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        data: dataVal,
+                        backgroundColor: bcolors
+                    }
+                ]
+            }
+        };
+    }
+
+    _extractLabelsAndDataFromGroupedResponse(data, groupName, formatLabelDate = true) {
         var labels = [];
         var dataVals = [];
 
         for (var i = 0; i < data.length; i++) {
-            labels.push(data[i][groupName]);
+            var labelRaw = data[i][groupName];
+            if (formatLabelDate) {
+                labelRaw = formatDate(labelRaw);
+            }
+
+            labels.push(labelRaw);
             dataVals.push(data[i].count);
         }
 
         return [labels, dataVals];
     }
 
+    _buildBackgroundColorSet(len) {
+        var bcolors = [];
+        for (var i = 0; i < len; i++) {
+            bcolors.push(randomColor());
+        }
+
+        return bcolors;
+    }
+
     getUserSignupGraph() {
         let self = this;
         let sql =
             'select ' +
-            'count(*), ' +
-            'created_at::DATE as signup_date ' +
+                'count(*), ' +
+                'created_at::DATE as signup_date ' +
             'from ' +
-            'users ' +
+                'users ' +
             'group by created_at::DATE ' +
             'order by signup_date ASC;';
 
@@ -80,10 +111,10 @@ class Metrics {
         let self = this;
         let sql =
             'select ' +
-            'count(*), ' +
-            'created_at::DATE as room_created ' +
+                'count(*), ' +
+                'created_at::DATE as room_created ' +
             'from ' +
-            'rooms ' +
+                'rooms ' +
             'group by created_at::DATE ' +
             'order by room_created ASC;'
 
@@ -92,6 +123,198 @@ class Metrics {
                 .then(function(data) {
                     var extractedData = self._extractLabelsAndDataFromGroupedResponse(data, "room_created");
                     return resolve(self._buildChartJSLineGraph(extractedData[0], "Room Creations", extractedData[1], '#76072c', '#f3216a'));
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getSubmissionsCount() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(*) ' +
+            'from ' +
+                'submissions;'
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    return resolve(data[0]);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getSubmissionsTodayCount() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(*) ' +
+            'from ' +
+                'submissions ' +
+            'where ' +
+                'created_at::DATE = NOW()::DATE;';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    return resolve(data[0]);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getProblemsUniqueCount() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(data.*) ' +
+            'from (' +
+                'select ' +
+                    'count(*) ' +
+                'from ' +
+                    'rooms ' +
+                'group by problem_id' +
+            ') as data;'
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    return resolve(data[0]);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getActiveRoomsCount() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(r.*) ' +
+            'from ' +
+                'rooms as r ' +
+            'where ' +
+                'r.deleted_at is null AND ' +
+                'exists ( ' +
+                    'select ' +
+                        'r.uuid ' +
+                    'from ' +
+                        'room_members as rm ' +
+                    'where ' +
+                        'rm.room_uuid = r.uuid AND ' +
+                        'not exists ( ' +
+                            'select ' +
+                                's.uuid ' +
+                            'from ' +
+                                'submissions as s ' +
+                            'where ' +
+                                's.room_uuid = r.uuid AND ' +
+                                's.user_uuid = rm.participant_user_uuid ' +
+                            ') ' +
+                        ') AND ' +
+                'r.updated_at >= (NOW() - INTERVAL \'1 hours\');';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    return resolve(data[0]);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getRoomUsersPiGraph() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(*) as count, ' +
+                'data.count || \' users\' as users_per_room ' +
+            'from ' +
+                '( ' +
+                    'select ' +
+                        'count(*) ' +
+                    'from ' +
+                        'room_members ' +
+                    'group by room_uuid ' +
+                ') as data ' +
+            'group by data.count;';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    var extractedData = self._extractLabelsAndDataFromGroupedResponse(data, "users_per_room", false);
+
+                    var labels = extractedData[0];
+                    let dataVals = extractedData[1];
+                    var bcolors = self._buildBackgroundColorSet(dataVals.length);
+
+                    return resolve(self._buildChartJSPieGraph(labels, dataVals, bcolors));
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getRoomFinishedPiGraph() {
+        let self = this;
+
+        function buildSQL(notVal = "") {
+            return 'select ' +
+                'count(r.*) ' +
+            'from ' +
+                'rooms as r ' +
+            'where ' +
+                'r.deleted_at is null AND ' +
+                notVal + 'exists ( ' +
+                    'select ' +
+                        'r.uuid ' +
+                    'from ' +
+                        'room_members as rm ' +
+                    'where ' +
+                        'rm.room_uuid = r.uuid AND ' +
+                        'not exists ( ' +
+                            'select ' +
+                                's.uuid ' +
+                            'from ' +
+                                'submissions as s ' +
+                            'where ' +
+                                's.room_uuid = r.uuid AND ' +
+                                's.user_uuid = rm.participant_user_uuid ' +
+                        ') ' +
+                    ');';
+        }
+
+        return new Promise(function(resolve, reject) {
+            var activeRooms;
+            return self._executeRaw(buildSQL())
+                .then(function(activeRoomsRes) {
+                    activeRooms = activeRoomsRes[0];
+
+                    return self._executeRaw(buildSQL("not "))
+                })
+                .then(function(notActiveRoomsRes) {
+                    var labels = [
+                        "room_open",
+                        "room_closed",
+                    ];
+                    var dataVals = [
+                        activeRooms.count,
+                        notActiveRoomsRes[0].count,
+                    ];
+                    var bcolors = self._buildBackgroundColorSet(2);
+
+                    return resolve(self._buildChartJSPieGraph(labels, dataVals, bcolors));
                 })
                 .catch(function(err) {
                     return reject(err);
