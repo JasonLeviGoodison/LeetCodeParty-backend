@@ -6,6 +6,7 @@ const Room = require('../../classes/Room');
 const Submissions = require('../../classes/Submissions');
 const SubmissionReceipts = require('../../classes/SubmissionReceipts');
 const Scoring = require('../../classes/Scoring');
+const Metrics = require('../../classes/Metrics');
 const Logger = require('../../observability/logging/logger');
 const { createGuid, buildHostRoomID } = require("../../utils/utils");
 
@@ -19,6 +20,7 @@ class SocketController {
         this.submissions = new Submissions(knex);
         this.submission_receipts = new SubmissionReceipts(knex);
         this.scoring = new Scoring(knex);
+        this.metrics = new Metrics(knex);
         this.knex = knex;
         this.io = io;
     }
@@ -216,6 +218,14 @@ class SocketController {
 
     getNumRooms() {
         return this.room.getNumRooms();
+    }
+
+    getUserSignupGraph() {
+        return this.metrics.getUserSignupGraph();
+    }
+
+    getRoomCreationGraph() {
+        return this.metrics.getRoomCreationGraph()
     }
 }
 

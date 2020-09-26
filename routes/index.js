@@ -25,6 +25,20 @@ router.get("/numRooms", (req, res) => {
 			});
 });
 
+router.get("/metrics/user/signups", (req, res) => {
+	return Controller.getUserSignupGraph()
+		.then(function(results) {
+			res.send(results).status(200);
+		});
+});
+
+router.get("/metrics/room/created", (req, res) => {
+	return Controller.getRoomCreationGraph()
+		.then(function(results) {
+			res.send(results).status(200);
+		});
+});
+
 module.exports = {
 	index: router,
 	registerController
