@@ -81,6 +81,27 @@ router.get("/metrics/rooms/finished/breakdown", (req, res) => {
 		});
 });
 
+router.get("/metrics/user/stickiness", (req, res) => {
+	return Controller.getUserStickiness()
+		.then(function(results) {
+			res.send(results).status(200);
+		});
+});
+
+router.get("/metrics/user/top", (req, res) => {
+	return Controller.getTopUsers()
+		.then(function(results) {
+			res.send(results).status(200);
+		});
+});
+
+router.get("/metrics/problem/top", (req, res) => {
+	return Controller.getTopProblems()
+		.then(function(results) {
+			res.send(results).status(200);
+		});
+});
+
 module.exports = {
 	index: router,
 	registerController

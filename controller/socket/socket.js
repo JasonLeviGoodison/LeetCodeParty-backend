@@ -251,6 +251,18 @@ class SocketController {
     getRoomFinishedPiGraph() {
         return this.metrics.getRoomFinishedPiGraph();
     }
+
+    getUserStickiness() {
+        return this.metrics.getUserStickiness();
+    }
+
+    getTopUsers() {
+        return this.metrics.getTopUsers();
+    }
+
+    getTopProblems() {
+        return this.metrics.getTopProblems();
+    }
 }
 
 module.exports = SocketController;

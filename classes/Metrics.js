@@ -321,6 +321,158 @@ class Metrics {
                 });
         });
     }
+
+    getUserStickiness() {
+        let self = this;
+        let sql =
+            'select ' +
+            '((  ' +
+            '   SELECT ' +
+            '      count(DISTINCT(data.participant_user_uuid)) as sticky_users  ' +
+            '   FROM ' +
+            '      ( ' +
+            '         SELECT ' +
+            '            Count(*), ' +
+            '            rm.participant_user_uuid, ' +
+            '            Min(rm.created_at) AS min_created_at, ' +
+            '            Max(rm.created_at) AS max_created_at, ' +
+            '            Extract(epoch  ' +
+            '         FROM ' +
+            '            ( ' +
+            '               Max(rm.created_at) - Min(rm.created_at)  ' +
+            '            ) ' +
+            ') AS epoch_diff_sec  ' +
+            '         FROM ' +
+            '            room_members AS rm  ' +
+            '         GROUP BY ' +
+            '            rm.participant_user_uuid  ' +
+            '      ) ' +
+            '      AS data  ' +
+            '   WHERE ' +
+            '      data.epoch_diff_sec > 3600)::decimal / (  ' +
+            '      select ' +
+            '         count(DISTINCT(u.uuid)) as all_users  ' +
+            '      from ' +
+            '         users as u)::decimal) * 100 as stickiness;';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    return resolve(data[0]);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    _buildTableRow(col1Val, col1SubText, col2Val, col3Val) {
+        var itemColor = randomColor();
+
+        return '<ul class="guiz-awards-row guiz-awards-row-even">' +
+                    '<li class="guiz-awards-star"><span class="star" style="background-color: ' + itemColor + ';"></span></li>' +
+                    '<li class="guiz-awards-title">' + col1Val +
+                        '<div class="guiz-awards-subtitle">' + col1SubText + '</div>' +
+                    '</li>' +
+                    '<li class="guiz-awards-track">' + col2Val + '</li>' +
+                    '<li class="guiz-awards-time">' + col3Val + '</li>' +
+                '</ul>';
+    }
+
+    getTopProblems() {
+        let self = this;
+        let sql =
+            'select ' +
+                'count(*) as problem_rooms, ' +
+                'problem_id, ' +
+                '( ' +
+                    'select ' +
+                        'count(*) ' +
+                    'from ' +
+                        'submissions as s ' +
+                    'where ' +
+                        's.room_uuid in ( ' +
+                            'select ' +
+                                'rr.uuid ' +
+                            'from ' +
+                                'rooms as rr ' +
+                            'where ' +
+                                'rr.problem_id = r.problem_id ' +
+                        ') ' +
+                ') as problem_submissions ' +
+            'from ' +
+                'rooms as r ' +
+            'group by r.problem_id ' +
+            'order by problem_rooms DESC ' +
+            'limit 5;';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    var htmlDataRows = "";
+                    for (var i = 0; i < data.length; i++) {
+                        var currData = data[i];
+                        htmlDataRows += self._buildTableRow(
+                            currData.problem_id,
+                            ((parseInt(currData.problem_submissions) / parseInt(currData.problem_rooms)) * 100).toFixed(2) + "% of rooms submitted.",
+                            currData.problem_rooms,
+                            currData.problem_submissions,
+                        );
+                    }
+
+                    return resolve(htmlDataRows);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
+
+    getTopUsers() {
+        let self = this;
+        let sql =
+            'select ' +
+                'u.uuid as user_uuid, ' +
+                '(select  ' +
+                    'count(*) ' +
+                'from ' +
+                    'room_members as rm ' +
+                'where ' +
+                    'rm.participant_user_uuid = u.uuid ' +
+                ') as rooms_count, ' +
+                '(select ' +
+                    'count(*) ' +
+                'from ' +
+                    'submissions as s ' +
+                'where  ' +
+                    's.user_uuid = u.uuid ' +
+                ') as finished_problems ' +
+            'from ' +
+                'users as u ' +
+            'order by rooms_count DESC ' +
+            'limit 5';
+
+        return new Promise(function(resolve, reject) {
+            return self._executeRaw(sql)
+                .then(function(data) {
+                    var htmlDataRows = "";
+                    for (var i = 0; i < data.length; i++) {
+                        var currData = data[i];
+                        htmlDataRows += self._buildTableRow(
+                            currData.user_uuid,
+                            ((parseInt(currData.finished_problems) / parseInt(currData.rooms_count)) * 100).toFixed(2) + "% of rooms submitted.",
+                            currData.rooms_count,
+                            currData.finished_problems,
+                        );
+                    }
+
+                    return resolve(htmlDataRows);
+                })
+                .catch(function(err) {
+                    return reject(err);
+                });
+        });
+    }
 }
 
 module.exports = Metrics;
