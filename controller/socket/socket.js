@@ -227,6 +227,42 @@ class SocketController {
     getRoomCreationGraph() {
         return this.metrics.getRoomCreationGraph()
     }
+
+    getActiveRoomsCount() {
+        return this.metrics.getActiveRoomsCount();
+    }
+
+    getSubmissionsCount() {
+        return this.metrics.getSubmissionsCount();
+    }
+
+    getSubmissionsTodayCount() {
+        return this.metrics.getSubmissionsTodayCount();
+    }
+
+    getProblemsUniqueCount() {
+        return this.metrics.getProblemsUniqueCount();
+    }
+
+    getRoomUsersPiGraph() {
+        return this.metrics.getRoomUsersPiGraph();
+    }
+
+    getRoomFinishedPiGraph() {
+        return this.metrics.getRoomFinishedPiGraph();
+    }
+
+    getUserStickiness() {
+        return this.metrics.getUserStickiness();
+    }
+
+    getTopUsers() {
+        return this.metrics.getTopUsers();
+    }
+
+    getTopProblems() {
+        return this.metrics.getTopProblems();
+    }
 }
 
 module.exports = SocketController;
