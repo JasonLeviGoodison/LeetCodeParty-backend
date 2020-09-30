@@ -31,3 +31,6 @@ echo
 echo
 
 eb deploy
+
+
+// also set env variable
