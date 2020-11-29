@@ -1,11 +1,11 @@
 # Leetcode Party
 
 ## Running Server
-    If you already have the db set up, run this command
+If you already have the db set up, run this command
 
     make run
 
-    If not, check out the set up instructions below
+If not, check out the set up instructions below
 
 ## SET UP
 
@@ -28,13 +28,13 @@ _Side Note: I also am a pretty big fan of this  [GUI representation app](https:/
 
 knexfile.js is where all the db connection information is kept. Look at the "development" object in that file. It should look like this:
 
-development: {
-    client: 'postgresql',
-    host     : "localhost",
-    user     : "leetparty",
-    password : "",
-    port     : ""
-}
+    development: {
+        client: 'postgresql',
+        host     : "localhost",
+        user     : "leetparty",
+        password : "",
+        port     : ""
+    }
 
 If you DIDNT make a leetparty db above (either werent able to or forgot) change the "user" field to your computer username. Example: user: "jasongoodison"
 
@@ -44,10 +44,10 @@ We use a secrets file that is gitignored so its never checked into git. This con
 
 create a file "secrets.js" in the /config folder. It should look like this:
 
-module.exports = {
-    ROLLBAR_ACCESS_CODE: 'NONE',
-    DB_PASSWORD: 'YOUR_PASSWORD'
-}
+    module.exports = {
+        ROLLBAR_ACCESS_CODE: 'NONE',
+        DB_PASSWORD: 'YOUR_PASSWORD'
+    }
 
 ## RUN THE SERVER
 
