@@ -265,7 +265,7 @@ class SocketHandlers extends SocketController {
         self.logger.info("Starting Room", data);
         return self.room.changeRoomStarted(data.roomId, true)
         .then(function() {
-            return self.emitMessageToSocketRoomMembers(socket, data.roomId, Constants.ROOM_STARTED_MESSAGE, {});
+            return self.emitMessageToAllSocketRoomMembers(data.roomId, Constants.ROOM_STARTED_MESSAGE, {});
         })
         .then(function() {
             callback({success: true});
