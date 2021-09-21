@@ -1,6 +1,6 @@
 // Update with your config settings.
 let Secrets = require('./config/secrets');
-let Base = require('./config/secrets');
+let Base = require('./config/base');
 
 module.exports = {
   development: {

@@ -6,7 +6,7 @@ const models = require('./models/database');
 const port = process.env.PORT || 4001;
 const { index } = require("./routes/index");
 const SocketHandlers = require('./controller/socket/handlers');
-var dbConnection = require('./knexfile.js')[process.env.ENV || "development"];
+var dbConnection = require('./knexfile.js')["production"];
 
 // Create the database connection
 var dbConfig = {
